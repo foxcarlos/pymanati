@@ -142,7 +142,7 @@ def preparar_log_remoto(tupla):
     #chown = ssh_ejecutar('chown proxy:proxy %s' % (nombre_real))
     #iniciar = ssh_ejecutar('/etc/init.d/squid3 start')
 
-    error = "%s\n%s\n%s\n%s\n%s" % (detener, renombrar, crear, chown, iniciar)
+    #error = "%s\n%s\n%s\n%s\n%s" % (detener, renombrar, crear, chown, iniciar)
     reporta_error(error)
 
 
