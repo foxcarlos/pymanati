@@ -53,7 +53,7 @@ def nombre_archivo(opcion):
     ruta_local = conf_squid[1][1] 
            
     ruta = {'local': ruta_local, 'remoto': ruta_remota}
-    nombre_archivo = conf_squid[4][1]  # 'access'
+    nombre_archivo = conf_squid[3][1]  # 'access'
     archivo = "%s%s_%s" % (ruta[opcion], nombre_archivo, dma_hms)
 
     return archivo
@@ -133,7 +133,7 @@ def preparar_log_remoto(tupla):
     '''
     error = ''  
     
-    nombre_real = fc.opcion_consultar('SQUID')[0][1] + fc.opcion_consultar('SQUID')[4][1]
+    nombre_real = fc.opcion_consultar('SQUID')[0][1] + fc.opcion_consultar('SQUID')[3][1]
     nombre_copia = tupla[1]
 
     detener = ssh_ejecutar('/etc/init.d/squid3 stop')
