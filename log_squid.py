@@ -309,7 +309,7 @@ def iniciar():
     reporta_error('Terminando  ssh_copiar')
 
     reporta_error('Leyendo archivo de log y procesando la inforamcion')
-    leer_log(tupla)
+    #leer_log(tupla)
     reporta_error('Proceso de lectura de log terminado')
 
 if __name__ == '__main__': 
