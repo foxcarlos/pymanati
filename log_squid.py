@@ -1,6 +1,4 @@
-
 #!/usr/bin/env python
-
 # -*- coding: utf-8 *-*
 
 '''
@@ -16,6 +14,7 @@ psycopg2 : Para conectarse a una base de datos PostGresql
 socket : Para obtener el nombre de un pc via socket
 paramiko : Para conectarse via ssh a un pc remoto
 '''
+
 
 import datetime
 import psycopg2
@@ -47,28 +46,24 @@ def nombre_archivo(opcion):
 
     '''
     t = datetime.datetime.now()
-    dma_hms = t.strftime('%d%m%Y%I%M%S')
-     
-    #fc = FileConfig('/home/cgarcia/desarrollo/python/pymanati/pymanati.conf')   
+    dma_hms = t.strftime('%d%m%Y%I%M%S')      
     conf_squid = fc.opcion_consultar('SQUID')
     
     ruta_remota = conf_squid[0][1] 
     ruta_local = conf_squid[1][1] 
            
     ruta = {'local': ruta_local, 'remoto': ruta_remota}
-    nombre_archivo = 'access'
-    archivo = "%s%s_%s.log" % (ruta[opcion], nombre_archivo, dma_hms)
+    nombre_archivo = conf_squid[4][1]  # 'access'
+    archivo = "%s%s_%s" % (ruta[opcion], nombre_archivo, dma_hms)
 
     return archivo
 
-
+    
 def ssh_conectar():
     '''
      Metodo que permite conectarme via ssh al servidor proxy
     '''
-    #fc = FileConfig('/home/cgarcia/desarrollo/python/pymanati/pymanati.conf')
     conf_squid = fc.opcion_consultar('SSH')
-
     ssh = ''
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -97,7 +92,7 @@ def ssh_copiar_log(tupla):
      ssh_copiar_log(tupla)
     '''
     error = ''
-    
+   
     rutaarchivo_local = tupla[0]
     rutaarchivo_remoto = tupla[1]
 
@@ -138,7 +133,7 @@ def preparar_log_remoto(tupla):
     '''
     error = ''  
     
-    nombre_real = fc.opcion_consultar('SQUID')[0][1] + 'access.log'
+    nombre_real = fc.opcion_consultar('SQUID')[0][1] + fc.opcion_consultar('SQUID')[4][1]
     nombre_copia = tupla[1]
 
     detener = ssh_ejecutar('/etc/init.d/squid3 stop')
@@ -178,18 +173,9 @@ def sql_ejecutar(cadena_sql):
     ej: "Select *from tabla"
     '''
      
-    error = ''
-    
-    #fc = FileConfig('/home/cgarcia/desarrollo/python/pymanati/pymanati.conf')
-
-    #host, clave, db, user = fc.opcion_consultar('POSTGRESQL')
-    #cadconex = "host='%s' dbname='%s' user='%s' password='%s'" % (host[1], db[1], user[1], clave[1])
-    
-    #pg = ConectarPG(cadconex)  
+    error = '' 
     reg_devueltos = pg.ejecutar(cadena_sql)   
     pg.conn.commit()
-    #pg.cur.close()
-    #pg.conn.close()
     return reg_devueltos
 
 
@@ -264,13 +250,13 @@ def leer_log(tupla):
                 (t.tm_mday, t.tm_mon, t.tm_year, t.tm_hour, t.tm_min, t.tm_sec)
             '''
 
-            lfecha = 'to_timestamp(%s)' % (separar[0])  # float(separar[0])
+            lfecha = 'to_timestamp(%s)' % (separar[0])
             lpuerto = separar[1]
             lip = separar[2]
             '''
             Llama al metodo nombre_pc() para ubicar el nombre del pc
             '''
-            lpc = nombre_pc(lip.strip())  # lip
+            lpc = nombre_pc(lip.strip())
             lacceso = separar[3]
             lpuerto_acceso = separar[4]
             lmetodo = separar[5]
@@ -296,10 +282,6 @@ def leer_log(tupla):
             print ComandoSql            
             reg_devueltos = pg.ejecutar(ComandoSql)   
             pg.conn.commit()
-            print reg_devueltos
-            #if len(error_sqle) > 0:
-            #    reporta_error(error_sqle)
-            #return
 
 
 def reporta_error(recibe_error):
