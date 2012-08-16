@@ -55,7 +55,6 @@ def nombre_archivo(opcion):
     ruta = {'local': ruta_local, 'remoto': ruta_remota}
     nombre_archivo = conf_squid[4][1]  # 'access'
     archivo = "%s%s_%s" % (ruta[opcion], nombre_archivo, dma_hms)
-
     return archivo
 
     
