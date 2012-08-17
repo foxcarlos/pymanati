@@ -103,7 +103,7 @@ def ssh_copiar_log(tupla):
         print error
         #reporta_error(error)
     else:
-        print 'archivo remoto:%s archivo local:%s' % (rutaarchivo_remoto, rutaarchivo_local)
+        #print 'archivo remoto:%s archivo local:%s' % (rutaarchivo_remoto, rutaarchivo_local)
         ftp = ssh_cnx.open_sftp()
         ftp.get(rutaarchivo_remoto, rutaarchivo_local)
         ftp.close()
@@ -128,7 +128,7 @@ def ssh_ejecutar(comando):
     else:
         stdin, stdout, stderr = x.exec_command(comando)
         error = stderr.read()
-        print error
+        #print error
         #reporta_error(error)
         x.close()
 
@@ -145,11 +145,11 @@ def preparar_log_remoto(tupla):
 
     nombre_real = fc.opcion_consultar('SQUID')[0][1] + fc.opcion_consultar('SQUID')[3][1]
     nombre_copia = tupla[1]
-    #detener = ssh_ejecutar('/etc/init.d/squid3 stop')
+    detener = ssh_ejecutar('/etc/init.d/squid3 stop')
     renombrar = ssh_ejecutar('mv %s %s' % (nombre_real, nombre_copia))
-    #crear = ssh_ejecutar('echo > %s' % (nombre_real))
-    #chown = ssh_ejecutar('chown proxy:proxy %s' % (nombre_real))
-    #iniciar = ssh_ejecutar('/etc/init.d/squid3 start')
+    crear = ssh_ejecutar('echo > %s' % (nombre_real))
+    chown = ssh_ejecutar('chown proxy:proxy %s' % (nombre_real))
+    iniciar = ssh_ejecutar('/etc/init.d/squid3 start')
 
     error = "%s\n%s\n%s\n%s\n%s" % (detener, renombrar, crear, chown, iniciar)
     print error
