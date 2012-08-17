@@ -125,6 +125,8 @@ def ssh_ejecutar(comando):
         stdin, stdout, stderr = x.exec_command(comando)
         error = stderr.read()
         print error
+        print stdin.read()
+        print stdout.read()
         reporta_error(error)
         x.close()
 
