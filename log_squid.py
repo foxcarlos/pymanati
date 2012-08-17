@@ -135,6 +135,7 @@ def preparar_log_remoto(tupla):
     
     nombre_real = fc.opcion_consultar('SQUID')[0][1] + fc.opcion_consultar('SQUID')[3][1]
     nombre_copia = tupla[1]
+    print 'mover %s a %s ' % (nombre_real, nombre_copia)
 
     #detener = ssh_ejecutar('/etc/init.d/squid3 stop')
     renombrar = ssh_ejecutar('mv %s %s' % (nombre_real, nombre_copia))
