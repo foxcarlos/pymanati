@@ -103,6 +103,7 @@ def ssh_copiar_log(tupla):
         print error
         #reporta_error(error)
     else:
+        print 'archivo remoto:%s archivo local:%s' % (rutaarchivo_remoto, rutaarchivo_local)
         ftp = ssh_cnx.open_sftp()
         ftp.get(rutaarchivo_remoto, rutaarchivo_local)
         ftp.close()
