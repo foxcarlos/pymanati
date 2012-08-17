@@ -72,6 +72,7 @@ def ssh_conectar():
     puerto = int(fc.opcion_consultar('SSH')[1][1])
     usuario = fc.opcion_consultar('SSH')[2][1]
     clave = fc.opcion_consultar('SSH')[3][1]
+    print 'Servidor:%s Puerto:%s Usuario:%s Clave:%s' % (servidor, puerto, usuario, clave)
     try:
         ssh.connect(servidor,puerto,usuario,clave)
     except:
@@ -99,7 +100,8 @@ def ssh_copiar_log(tupla):
     ssh_cnx = ssh_conectar()
     if ssh_cnx == 1:
         error = '**Error al intentar conectar via SSH metodo ssh_conectar()**'
-        reporta_error(error)
+        print error
+        #reporta_error(error)
     else:
         ftp = ssh_cnx.open_sftp()
         ftp.get(rutaarchivo_remoto, rutaarchivo_local)
@@ -121,14 +123,14 @@ def ssh_ejecutar(comando):
     if x == 1:
         error = '**Error al intentar conectar via SSH metodo ssh_conectar()**'
         print error
-        reporta_error(error)
+        #reporta_error(error)
     else:
         stdin, stdout, stderr = x.exec_command(comando)
         error = stderr.read()
         print error
         print stdin.read()
         print stdout.read()
-        reporta_error(error)
+        #reporta_error(error)
         x.close()
 
 
@@ -136,7 +138,12 @@ def preparar_log_remoto(tupla):
     '''
     '''
     error = ''  
-    
+    detener = ''
+    renombrar = ''
+    crear = ''
+    chown = ''
+    iniciar = ''
+
     nombre_real = fc.opcion_consultar('SQUID')[0][1] + fc.opcion_consultar('SQUID')[3][1]
     nombre_copia = tupla[1]
     print 'mover %s a %s ' % (nombre_real, nombre_copia)
@@ -147,8 +154,9 @@ def preparar_log_remoto(tupla):
     #chown = ssh_ejecutar('chown proxy:proxy %s' % (nombre_real))
     #iniciar = ssh_ejecutar('/etc/init.d/squid3 start')
 
-    #error = "%s\n%s\n%s\n%s\n%s" % (detener, renombrar, crear, chown, iniciar)
-    reporta_error(error)
+    error = "%s\n%s\n%s\n%s\n%s" % (detener, renombrar, crear, chown, iniciar)
+    print error
+    #reporta_error(error)
 
 
 def nombre_pc(ippc):
