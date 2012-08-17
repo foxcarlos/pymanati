@@ -120,6 +120,7 @@ def ssh_ejecutar(comando):
     x = ssh_conectar()
     if x == 1:
         error = '**Error al intentar conectar via SSH metodo ssh_conectar()**'
+        print error
         reporta_error(error)
     else:
         stdin, stdout, stderr = x.exec_command(comando)
