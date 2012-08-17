@@ -72,7 +72,7 @@ def ssh_conectar():
     puerto = int(fc.opcion_consultar('SSH')[1][1])
     usuario = fc.opcion_consultar('SSH')[2][1]
     clave = fc.opcion_consultar('SSH')[3][1]
-    print 'Servidor:%s Puerto:%s Usuario:%s Clave:%s' % (servidor, puerto, usuario, clave)
+    #print 'Servidor:%s Puerto:%s Usuario:%s Clave:%s' % (servidor, puerto, usuario, clave)
     try:
         ssh.connect(servidor,puerto,usuario,clave)
     except:
@@ -99,7 +99,7 @@ def ssh_copiar_log(tupla):
 
     ssh_cnx = ssh_conectar()
     if ssh_cnx == 1:
-        error = '**Error al intentar conectar via SSH metodo ssh_conectar()**'
+        error = '**Error al intentar conectar via SSH metodo ssh_copiar_log()**'
         print error
         #reporta_error(error)
     else:
@@ -122,7 +122,7 @@ def ssh_ejecutar(comando):
     error = ''
     x = ssh_conectar()
     if x == 1:
-        error = '**Error al intentar conectar via SSH metodo ssh_conectar()**'
+        error = '**Error al intentar conectar via SSH metodo ssh_ejecutar()**'
         print error
         #reporta_error(error)
     else:
@@ -145,8 +145,6 @@ def preparar_log_remoto(tupla):
 
     nombre_real = fc.opcion_consultar('SQUID')[0][1] + fc.opcion_consultar('SQUID')[3][1]
     nombre_copia = tupla[1]
-    print 'mover %s a %s ' % (nombre_real, nombre_copia)
-
     #detener = ssh_ejecutar('/etc/init.d/squid3 stop')
     renombrar = ssh_ejecutar('mv %s %s' % (nombre_real, nombre_copia))
     #crear = ssh_ejecutar('echo > %s' % (nombre_real))
@@ -321,7 +319,7 @@ def iniciar():
     reporta_error('Terminando  ssh_copiar')
 
     reporta_error('Leyendo archivo de log y procesando la inforamcion')
-    #leer_log(tupla)
+    leer_log(tupla)
     reporta_error('Proceso de lectura de log terminado')
 
 if __name__ == '__main__': 
