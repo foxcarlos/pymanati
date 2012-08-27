@@ -113,8 +113,9 @@ def consultar():
             cns.consulta_todas()
         elif opc.strip() == '2':
             cns.consulta_ip_sin_navegar()
-        elif opc.strip() =modificar():
-    print 'Metodo Modificar'
+        elif opc.strip() == '3':
+            seguir = False
+            #print 'Metodo Modificar'
 
 
 def eliminar():
