@@ -67,7 +67,7 @@ to_date('%s','YYYY-MM-DD'))" % (fdesde, fhasta)
         cad_select = "select id,to_char(fecha,'DD-MM-YYYY HH24:MI') as fecha,ip,direccion \
 from log_squid where %s" % (cad_1.strip().rstrip('and'))
         print cad_select
-        #time.sleep(10)
+        time.sleep(10)
 
         self.iniciar_postgres()
         self.registros = self.pg.ejecutar(cad_select)
