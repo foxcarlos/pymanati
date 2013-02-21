@@ -46,7 +46,7 @@ def nombre_archivo(opcion):
 
     '''
     t = datetime.datetime.now()
-    dma_hms = t.strftime('%d%m%Y%I%M%S')      
+    dma_hms = t.strftime('%d_%m_%Y_%I%M%S')      
     conf_squid = fc.opcion_consultar('SQUID')
     
     ruta_remota = conf_squid[0][1] 
@@ -289,7 +289,7 @@ def leer_log(tupla):
             % (lfecha, lpuerto, lip, lpc, lacceso, lpuerto_acceso, lmetodo, \
             ldireccion3[0:240], lredireccion3)
 
-            print ComandoSql            
+            #print ComandoSql
             reg_devueltos = pg.ejecutar(ComandoSql)   
             pg.conn.commit()
 
