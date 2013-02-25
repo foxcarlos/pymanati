@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/pymanati.ui'
 #
-# Created: Fri Feb 22 16:06:35 2013
+# Created: Mon Feb 25 14:45:08 2013
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1053, 616)
+        Form.resize(1053, 636)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -190,7 +190,7 @@ class Ui_Form(object):
         self.lblImagen.setScaledContents(True)
         self.lblImagen.setObjectName("lblImagen")
         self.lblTitulo = QtGui.QLabel(self.widget)
-        self.lblTitulo.setGeometry(QtCore.QRect(470, 20, 331, 16))
+        self.lblTitulo.setGeometry(QtCore.QRect(470, 10, 331, 31))
         font = QtGui.QFont()
         font.setFamily("Monospace")
         font.setPointSize(14)
@@ -503,33 +503,40 @@ class Ui_Form(object):
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
         Form.setTabOrder(self.btnBuscar, self.btnLimpiar)
-        Form.setTabOrder(self.btnLimpiar, self.radiobBuscar)
-        Form.setTabOrder(self.radiobBuscar, self.radiobFiltrar)
-        Form.setTabOrder(self.radiobFiltrar, self.btnSalir)
+        Form.setTabOrder(self.btnLimpiar, self.btnSalir)
         Form.setTabOrder(self.btnSalir, self.txtFechaDesde)
         Form.setTabOrder(self.txtFechaDesde, self.txtFechaHasta)
         Form.setTabOrder(self.txtFechaHasta, self.txtPuerto)
         Form.setTabOrder(self.txtPuerto, self.txtIP)
         Form.setTabOrder(self.txtIP, self.txtComputador)
         Form.setTabOrder(self.txtComputador, self.txtWeb)
-        Form.setTabOrder(self.txtWeb, self.tableWidget)
+        Form.setTabOrder(self.txtWeb, self.radiobBuscar)
+        Form.setTabOrder(self.radiobBuscar, self.radiobFiltrar)
+        Form.setTabOrder(self.radiobFiltrar, self.tableWidget)
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QtGui.QApplication.translate("Form", "pyManati Generador de Consultas de Navegacion Web", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnBuscar.setToolTip(QtGui.QApplication.translate("Form", "Click para Buscar", None, QtGui.QApplication.UnicodeUTF8))
         self.btnBuscar.setText(QtGui.QApplication.translate("Form", "&Buscar", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnSalir.setToolTip(QtGui.QApplication.translate("Form", "Salir del Sistema", None, QtGui.QApplication.UnicodeUTF8))
         self.btnSalir.setText(QtGui.QApplication.translate("Form", "&Salir", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnLimpiar.setToolTip(QtGui.QApplication.translate("Form", "Limpiar todos los campos de Busqueda", None, QtGui.QApplication.UnicodeUTF8))
         self.btnLimpiar.setText(QtGui.QApplication.translate("Form", "&Limpiar", None, QtGui.QApplication.UnicodeUTF8))
         self.lblTitulo.setText(QtGui.QApplication.translate("Form", "Control de Navegacion Manati", None, QtGui.QApplication.UnicodeUTF8))
         self.lblFechaDesde.setText(QtGui.QApplication.translate("Form", "Fecha Desde", None, QtGui.QApplication.UnicodeUTF8))
+        self.txtFechaDesde.setToolTip(QtGui.QApplication.translate("Form", "Insegrese la fecha en Formato DD/MM/AAAA", None, QtGui.QApplication.UnicodeUTF8))
         self.txtFechaDesde.setInputMask(QtGui.QApplication.translate("Form", "00/00/0000; ", None, QtGui.QApplication.UnicodeUTF8))
         self.lblFechaHasta.setText(QtGui.QApplication.translate("Form", "Fecha Hasta", None, QtGui.QApplication.UnicodeUTF8))
+        self.txtFechaHasta.setToolTip(QtGui.QApplication.translate("Form", "Insegrese la fecha en Formato DD/MM/AAAA", None, QtGui.QApplication.UnicodeUTF8))
         self.txtFechaHasta.setInputMask(QtGui.QApplication.translate("Form", "00/00/0000; ", None, QtGui.QApplication.UnicodeUTF8))
         self.txtPuerto.setInputMask(QtGui.QApplication.translate("Form", "00; ", None, QtGui.QApplication.UnicodeUTF8))
         self.lblPuerto.setText(QtGui.QApplication.translate("Form", "Puerto", None, QtGui.QApplication.UnicodeUTF8))
-        self.txtIP.setInputMask(QtGui.QApplication.translate("Form", "000.000.000.000; ", None, QtGui.QApplication.UnicodeUTF8))
+        self.txtIP.setToolTip(QtGui.QApplication.translate("Form", "Ingrese la Direccion IP del Computador que desea consultar", None, QtGui.QApplication.UnicodeUTF8))
         self.lblIP.setText(QtGui.QApplication.translate("Form", "Direccion IP", None, QtGui.QApplication.UnicodeUTF8))
         self.lblPC.setText(QtGui.QApplication.translate("Form", "Computador", None, QtGui.QApplication.UnicodeUTF8))
+        self.txtComputador.setToolTip(QtGui.QApplication.translate("Form", "Ingrese el Nombre del Computador que desea consultar", None, QtGui.QApplication.UnicodeUTF8))
         self.lblWeb.setText(QtGui.QApplication.translate("Form", "Pagina Web Visitada", None, QtGui.QApplication.UnicodeUTF8))
+        self.txtWeb.setToolTip(QtGui.QApplication.translate("Form", "Ingrese una palabra que desee buscar", None, QtGui.QApplication.UnicodeUTF8))
         self.radiobFiltrar.setText(QtGui.QApplication.translate("Form", "Filtrar contenido de la Lista", None, QtGui.QApplication.UnicodeUTF8))
         self.radiobBuscar.setText(QtGui.QApplication.translate("Form", "Buscar en Base de Datos", None, QtGui.QApplication.UnicodeUTF8))
 

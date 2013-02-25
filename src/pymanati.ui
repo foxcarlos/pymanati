@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1053</width>
-    <height>616</height>
+    <height>636</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -459,6 +459,9 @@
       <height>41</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>Click para Buscar</string>
+    </property>
     <property name="layoutDirection">
      <enum>Qt::LeftToRight</enum>
     </property>
@@ -479,6 +482,9 @@
       <height>41</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>Salir del Sistema</string>
+    </property>
     <property name="layoutDirection">
      <enum>Qt::LeftToRight</enum>
     </property>
@@ -498,6 +504,9 @@
       <width>91</width>
       <height>41</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>Limpiar todos los campos de Busqueda</string>
     </property>
     <property name="layoutDirection">
      <enum>Qt::LeftToRight</enum>
@@ -533,9 +542,9 @@
     <property name="geometry">
      <rect>
       <x>470</x>
-      <y>20</y>
+      <y>10</y>
       <width>331</width>
-      <height>16</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
@@ -1049,6 +1058,9 @@
       <height>23</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>Insegrese la fecha en Formato DD/MM/AAAA</string>
+    </property>
     <property name="inputMask">
      <string>00/00/0000; </string>
     </property>
@@ -1111,6 +1123,9 @@
       <width>113</width>
       <height>23</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>Insegrese la fecha en Formato DD/MM/AAAA</string>
     </property>
     <property name="inputMask">
      <string>00/00/0000; </string>
@@ -1188,8 +1203,8 @@
       <height>23</height>
      </rect>
     </property>
-    <property name="inputMask">
-     <string>000.000.000.000; </string>
+    <property name="toolTip">
+     <string>Ingrese la Direccion IP del Computador que desea consultar</string>
     </property>
    </widget>
    <widget class="QLabel" name="lblIP">
@@ -1301,6 +1316,9 @@
       <height>23</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>Ingrese el Nombre del Computador que desea consultar</string>
+    </property>
    </widget>
    <widget class="QLabel" name="lblWeb">
     <property name="geometry">
@@ -1360,6 +1378,9 @@
       <width>221</width>
       <height>23</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>Ingrese una palabra que desee buscar</string>
     </property>
    </widget>
    <widget class="QRadioButton" name="radiobFiltrar">
@@ -1540,8 +1561,6 @@
  <tabstops>
   <tabstop>btnBuscar</tabstop>
   <tabstop>btnLimpiar</tabstop>
-  <tabstop>radiobBuscar</tabstop>
-  <tabstop>radiobFiltrar</tabstop>
   <tabstop>btnSalir</tabstop>
   <tabstop>txtFechaDesde</tabstop>
   <tabstop>txtFechaHasta</tabstop>
@@ -1549,6 +1568,8 @@
   <tabstop>txtIP</tabstop>
   <tabstop>txtComputador</tabstop>
   <tabstop>txtWeb</tabstop>
+  <tabstop>radiobBuscar</tabstop>
+  <tabstop>radiobFiltrar</tabstop>
   <tabstop>tableWidget</tabstop>
  </tabstops>
  <resources/>
