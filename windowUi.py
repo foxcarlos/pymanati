@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/pymanati.ui'
 #
-# Created: Mon Feb 25 14:45:08 2013
+# Created: Wed Feb 27 08:41:54 2013
 #      by: pyside-uic 0.2.13 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -200,6 +200,13 @@ class Ui_Form(object):
         self.lblTitulo.setScaledContents(False)
         self.lblTitulo.setWordWrap(False)
         self.lblTitulo.setObjectName("lblTitulo")
+        self.btnExportar = QtGui.QPushButton(self.widget)
+        self.btnExportar.setGeometry(QtCore.QRect(210, 10, 91, 41))
+        self.btnExportar.setLayoutDirection(QtCore.Qt.LeftToRight)
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap("img/OfficeExcel.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.btnExportar.setIcon(icon4)
+        self.btnExportar.setObjectName("btnExportar")
         self.frame = QtGui.QFrame(Form)
         self.frame.setGeometry(QtCore.QRect(0, 80, 1051, 71))
         palette = QtGui.QPalette()
@@ -523,6 +530,8 @@ class Ui_Form(object):
         self.btnLimpiar.setToolTip(QtGui.QApplication.translate("Form", "Limpiar todos los campos de Busqueda", None, QtGui.QApplication.UnicodeUTF8))
         self.btnLimpiar.setText(QtGui.QApplication.translate("Form", "&Limpiar", None, QtGui.QApplication.UnicodeUTF8))
         self.lblTitulo.setText(QtGui.QApplication.translate("Form", "Control de Navegacion Manati", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnExportar.setToolTip(QtGui.QApplication.translate("Form", "Exportar consulta a MS Excel", None, QtGui.QApplication.UnicodeUTF8))
+        self.btnExportar.setText(QtGui.QApplication.translate("Form", "&Exportar", None, QtGui.QApplication.UnicodeUTF8))
         self.lblFechaDesde.setText(QtGui.QApplication.translate("Form", "Fecha Desde", None, QtGui.QApplication.UnicodeUTF8))
         self.txtFechaDesde.setToolTip(QtGui.QApplication.translate("Form", "Insegrese la fecha en Formato DD/MM/AAAA", None, QtGui.QApplication.UnicodeUTF8))
         self.txtFechaDesde.setInputMask(QtGui.QApplication.translate("Form", "00/00/0000; ", None, QtGui.QApplication.UnicodeUTF8))

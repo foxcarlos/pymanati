@@ -18,7 +18,6 @@ ruta_arch_conf = os.path.dirname(sys.argv[0])
 archivo_configuracion = os.path.join(ruta_arch_conf, 'pymanati.conf')
 fc = FileConfig(archivo_configuracion)
 
-
 class ControlMainWindow(QtGui.QMainWindow):
     '''
     '''
@@ -34,20 +33,34 @@ class ControlMainWindow(QtGui.QMainWindow):
         '''
         QtCore.QObject.connect(self.ui.btnBuscar, QtCore.SIGNAL("clicked()"), self.Buscar)
         QtCore.QObject.connect(self.ui.btnLimpiar, QtCore.SIGNAL("clicked()"), self.limpiarText)
+        QtCore.QObject.connect(self.ui.btnExportar, QtCore.SIGNAL("clicked()"), self.exportarExcel)
         self.connect(self.ui.btnSalir, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
         self.statusBar().showMessage("Listo")
 
         self.main()
 
     def main(self):
+        '''
+        Este metodo se ejecuta al iniciar la Aplicacion,
+        en las variables host, db, user, clave, se almacenaran
+        los valores necesarios para realizar las consultas a
+        el servidor de Base de Datos PostGreSQL y estas a su vez 
+        crearan una Cadena de Conexion que sera utilizada por
+        toda la aplicacion como variable Publica
+        '''
+
         host, db, user, clave = fc.opcion_consultar('POSTGRESQL')
         self.cadconex = "host='%s' dbname='%s' user='%s' password='%s'" % (host[1], db[1], user[1], clave[1])
         self.ui.txtFechaDesde.setFocus()
+        self.registros = []
 
-    def iniciarForm(self):
-        '''
-        '''
-        pass
+        #Si la Plataforma es Windows aumento de tamaño los Iconos de los botones ya que se ven muy pequeños
+        if sys.platform == 'win32':
+            self.ui.btnBuscar.setIconSize(QtCore.QSize(45, 45))
+            self.ui.btnLimpiar.setIconSize(QtCore.QSize(35, 35))
+            self.ui.btnExportar.setIconSize(QtCore.QSize(35, 35))
+            self.ui.btnSalir.setIconSize(QtCore.QSize(35, 35))
+
 
     def Buscar(self):
         '''
@@ -64,10 +77,11 @@ class ControlMainWindow(QtGui.QMainWindow):
         if cadSql:
             self.statusBar().showMessage("Espere mientras se obtienen los registros de la base de datos....!")
             self.setCursor(QtCore.Qt.WaitCursor)
-            registros = self.obtenerDatos(cadSql)  # Ejecuta en PostGreSQL la cadena sql pasada 
-            self.PrepararTableWidget(registros, listaCabecera)  # Configurar el tableWidget
-            self.InsertarRegistros(registros)  # Insertar los Registros en el TableWidget
-            self.statusBar().showMessage("Consulta realizada con exito, se obtuvieron %s registro(s)" % (len(registros)))
+            self.registros = ''
+            self.registros = self.obtenerDatos(cadSql)  # Ejecuta en PostGreSQL la cadena sql pasada 
+            self.PrepararTableWidget(self.registros, listaCabecera)  # Configurar el tableWidget
+            self.InsertarRegistros(self.registros)  # Insertar los Registros en el TableWidget
+            self.statusBar().showMessage("Consulta realizada con exito, se obtuvieron %s registro(s)" % (len(self.registros)))
             self.setCursor(QtCore.Qt.ArrowCursor)
         else:
             msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'Lo siento', 'Es necesario que seleccione una opcion de Busqueda')
@@ -146,12 +160,15 @@ class ControlMainWindow(QtGui.QMainWindow):
         cadIP = "ip like '%%%s%%' AND "   % (lcIP) if lcIP.replace('.', '') else ''
         cadComputador = "pc like '%%%s%%' AND " % (lcComputador) if lcComputador else ''
         cadWeb = "upper(direccion) like '%%%s%%' AND " % (lcWeb) if lcWeb else ''
-        cadOtraCond = "upper(pc) !='ANLPRG7' AND "
+        cadSoloValidas = "(acceso not like '%DENIED%') and "
+        cadExcluirme = "upper(pc) !='ANLPRG7' AND "
 
+        #Campos que pide el Form, es necesario que el usuario llene por lo menos uno
         campos = cadFecha + cadPuerto + cadIP + cadComputador + cadWeb
         
+        #Si lleno al menos uno, arma el select, de lo contrario devuelde cadenaSql Vacia
         if campos:
-            campos = campos + cadOtraCond
+            campos = campos + cadExcluirme + cadSoloValidas
             cadenaSql = 'select id, fecha, puerto, ip, pc, puerto_acceso, metodo, direccion from log_squid  where ' + \
                 campos + 'del = 0 '
         return cadenaSql
@@ -179,12 +196,34 @@ class ControlMainWindow(QtGui.QMainWindow):
         '''
         try:
             pg = ConectarPG(self.cadconex)
-            self.registros = pg.ejecutar(cadena_pasada)
+            registros = pg.ejecutar(cadena_pasada)
             pg.cur.close()
             pg.conn.close()
         except:
-            self.registros = []
-        return self.registros
+            registros = []
+        return registros
+
+    def exportarExcel(self):
+        '''
+        Permite Exportar a excel los registros obtenidos en la Consulta,
+        estos registros estan contenidos dentro de la variable 
+        self.registros devuelto por el Metodo obtenerDatos(), si existen
+        registros estos son exportados a de lo contrario emite un mensaje
+        de Advertencia
+        '''
+
+        file = QtGui.QFileDialog.getSaveFileName(self, caption="Guardar Archivo Como..", filter=".xls")
+        nombreArchivo = file[0] + file[1]
+        
+        if self.registros:
+            tuplas = calcular_longitud(self.registros, 0, 65000)
+            exportar_excel(tuplas, nombreArchivo)
+            
+            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Felicidades ....', 'Consulta Guardada con Exito en:%s' % (file[0]))
+            msgBox.exec_()
+        else:
+            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'Lo siento', 'No Existen registros para guardar')
+            msgBox.exec_()
 
     def limpiarText(self):
         '''

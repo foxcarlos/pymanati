@@ -565,6 +565,29 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QPushButton" name="btnExportar">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>10</y>
+      <width>91</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Exportar consulta a MS Excel</string>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LeftToRight</enum>
+    </property>
+    <property name="text">
+     <string>&amp;Exportar</string>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../img/OfficeExcel.png</normaloff>../img/OfficeExcel.png</iconset>
+    </property>
+   </widget>
   </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
