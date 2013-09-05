@@ -31,7 +31,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         '''
         Aqui se conectan todos los objetos con sus slot
         '''
-        QtCore.QObject.connect(self.ui.btnBuscar, QtCore.SIGNAL("clicked()"), self.Buscar)
+        QtCore.QObject.connect(self.ui.btnBuscar, QtCore.SIGNAL("clicked()"), self.tipoBusqueda)
         QtCore.QObject.connect(self.ui.btnLimpiar, QtCore.SIGNAL("clicked()"), self.limpiarText)
         QtCore.QObject.connect(self.ui.btnExportar, QtCore.SIGNAL("clicked()"), self.exportarExcel)
         self.connect(self.ui.btnSalir, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
@@ -60,7 +60,46 @@ class ControlMainWindow(QtGui.QMainWindow):
             self.ui.btnLimpiar.setIconSize(QtCore.QSize(35, 35))
             self.ui.btnExportar.setIconSize(QtCore.QSize(35, 35))
             self.ui.btnSalir.setIconSize(QtCore.QSize(35, 35))
+    
+    def tipoBusqueda(self):
+        if self.ui.radiobBuscar.isChecked():
+            self.validarBusqueda()
+        else:
+            self.Filtrar()
 
+    def validarBusqueda(self):
+        campos = []
+
+        lcFechaDesde = self.ui.txtFechaDesde.text()
+        lcFechaHasta = self.ui.txtFechaHasta.text()
+        lcPuerto = self.ui.txtPuerto.text()
+        lcIP = self.ui.txtIP.text()
+        lcComputador = self.ui.txtComputador.text()
+        lcWeb = self.ui.txtWeb.text().upper()
+        
+        #para saber cuantos campos de consultaran
+        for f in lcFechaDesde, lcFechaHasta, lcPuerto , lcIP, lcComputador, lcWeb:
+            if f:
+                campos.append(f)
+
+        #saber de cuantos dias es la consulta, si no se coloca nada se elimina el caracter '/'
+        f1 = datetime.datetime.strptime(lcFechaDesde, '%d/%m/%Y').date() if lcFechaDesde.replace('/', '') else 0
+        f2 = datetime.datetime.strptime(lcFechaHasta, '%d/%m/%Y').date() if lcFechaHasta.replace('/', '') else 0
+
+        '''
+        Si el valor de FechaDesde y El Valor de Fecha hasta esta Vacio 
+        entonces la variable dias se establece a 0, en python 0 devuelve False
+        '''
+        
+        dias = (f2 - f1).days if f1 and f2  else 0
+
+        if dias >30 or len(campos) <3:
+            mensaje = 'Para que la Busqueda sea mas eficiente y rapida Verifique que la consulta no sobrepase los 30 dias \
+o que realice una busqueda de almenos 3 campos'
+            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'Aviso de Sistema', mensaje)
+            msgBox.exec_()
+        else:
+            self.Buscar()
 
     def Buscar(self):
         '''
@@ -74,6 +113,7 @@ class ControlMainWindow(QtGui.QMainWindow):
                 ('PC', 160), ('P_ACCESO', 100), ('METODO', 80), ('DIRECCION_WEB', 300)]
         
         cadSql = self.armarSelect()
+        print cadSql
         if cadSql:
             self.statusBar().showMessage("Espere mientras se obtienen los registros de la base de datos....!")
             self.setCursor(QtCore.Qt.WaitCursor)
@@ -86,6 +126,33 @@ class ControlMainWindow(QtGui.QMainWindow):
         else:
             msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'Lo siento', 'Es necesario que seleccione una opcion de Busqueda')
             msgBox.exec_()
+
+    def Filtrar(self):
+        '''
+        '''
+        print('Click')
+        l = self.registros
+
+        lcFechaDesde = self.ui.txtFechaDesde.text()
+        lcFechaHasta = self.ui.txtFechaHasta.text()
+        lcPuerto = self.ui.txtPuerto.text()
+        lcIP = self.ui.txtIP.text()
+        lcComputador = self.ui.txtComputador.text()
+        lcWeb = self.ui.txtWeb.text().upper()
+        
+        cadFechaD = "'%s' in f and " % (lcFechaDesde) if lcFechaDesde.replace('/', '') else ''        
+        cadFechaH = "'%s' in f and " % (lcFechaHasta) if lcFechaHasta.replace('/', '')  else ''
+        cadPuerto = "'%s'  in f and " % (lcPuerto) if lcPuerto else ''
+        cadIP = "'%s' in f and "   % (lcIP) if lcIP.replace('.', '') else ''
+        cadComputador = "'%s' in f and " % (lcComputador) if lcComputador else ''
+        cadWeb = "'%s' in f  and " % (lcWeb) if lcWeb else ''
+        filtro = cadFechaD + cadFechaH + cadPuerto + cadIP + cadComputador + cadWeb
+        cadFiltrar = filtro[:-4]
+        
+        for f in l:
+            if eval(cadFiltrar):
+                print f
+
 
     def PrepararTableWidget(self, CantidadReg=0, Columnas=0):
         '''
@@ -153,12 +220,12 @@ class ControlMainWindow(QtGui.QMainWindow):
         lcComputador = self.ui.txtComputador.text()
         lcWeb = self.ui.txtWeb.text().upper()
 
-        cadFecha = "(fecha >= '%s' AND fecha <= '%s') AND " % (lcFechaDesde, lcFechaHasta) \
+        cadFecha = "(fecha between '%s' AND '%s') AND " % (lcFechaDesde, lcFechaHasta) \
                 if (lcFechaDesde.replace('/', '') and lcFechaHasta.replace('/', '')) else ''
 
         cadPuerto = "puerto = %s AND " % (lcPuerto) if lcPuerto else ''
         cadIP = "ip like '%%%s%%' AND "   % (lcIP) if lcIP.replace('.', '') else ''
-        cadComputador = "pc like '%%%s%%' AND " % (lcComputador) if lcComputador else ''
+        cadComputador = "upper(pc) like '%%%s%%' AND " % (lcComputador.upper()) if lcComputador else ''
         cadWeb = "upper(direccion) like '%%%s%%' AND " % (lcWeb) if lcWeb else ''
         cadSoloValidas = "(acceso not like '%DENIED%') and "
         cadExcluirme = "upper(pc) !='ANLPRG7' AND "
