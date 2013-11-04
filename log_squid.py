@@ -188,31 +188,6 @@ def sql_ejecutar(cadena_sql):
     pg.conn.commit()
     return reg_devueltos
 
-
-def limpiar_lista(separar):
-    '''
-     Metodo que permite eliminar de la Lista que fue pasada como parametro
-     aquellas que estan vacias y las que tienen solo un guion
-     ej: ('fox','','-','carlos','')
-     Count() Cuenta cuantas veces se repite en la Lista el parametro pasado
-     remove() Elimina de la lista aquellas que cumplan la condicion
-     For Lin recorre la Lista y ejecuta el Metodo remove()
-    '''
-
-    eliminar_blanco = separar.count('')
-    eliminar_guion = separar.count('-')
-
-    lin = 0
-    for lin in range(eliminar_guion):
-        separar.remove('-')
-
-    lin = 0
-    for lin in range(eliminar_blanco):
-        separar.remove('')
-
-    return separar
-
-
 def leer_log(tupla):
     '''
     El log de squid viene separado por espacios en blanco , este medotdo
@@ -234,17 +209,18 @@ def leer_log(tupla):
     pg = ConectarPG(cadconex) 
     #</POSTGRESQL>
     
-    for linea in file(archivo_local):
+    f = open(archivo_local)
+    for linea in f.readlines():
         no_linea = no_linea + 1
         #print no_linea
-        separar_tupla = linea.split(separador)
+        separar = linea.split()
 
-        if len(separar_tupla) > 1:
+        if len(separar) > 1:
             '''
             El Metodo limpiar_lista() elimina de la tupla ciertas
             condiciones que no se necesitan, por ejemplo tuplas vacias
             '''
-            separar = limpiar_lista(separar_tupla)
+            #separar = limpiar_lista(separar_tupla)
 
             '''
             Aqui convierto la hora en segundos que coloca squid en
