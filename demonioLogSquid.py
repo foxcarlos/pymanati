@@ -1,52 +1,44 @@
 #!/usr/bin/env python
 
-import time
 from daemon import runner
 import logging
 import os
 import sys
-import zmq
-from rutinas import varias
-from ConfigParser import SafeConfigParser
+import ConfigParser
 import paramiko
 import datetime
 import psycopg2
 import socket
 
-
 class demonioServer():
     def __init__(self):
-        '''Metodo Init donde se inicializan
-        todos los procesos para dar comienzo
-        al Demonio'''
+        '''Init'''
+
+        self.archivoCfg()
+        self.configInicial()
+        self.configDemonio()
+
+    def archivoCfg(self):
+        '''Inicializa y Obtiene Informacion del archivo de Configuracion .cfg'''
+
+        self.nombreArchivoConf = 'pymanati.cfg'
+        self.fc = ConfigParser.ConfigParser()
+
+        self.ruta_arch_conf = os.path.dirname(os.path.abspath(__file__))
+        self.archivo_configuracion = os.path.join(self.ruta_arch_conf, self.nombreArchivoConf)
+        self.fc.read(self.archivo_configuracion)
+
+    def configInicial(self):
+        '''Metodo que permite extraer todos los parametros
+        del archivo de configuracion pyloro.cfg que se
+        utilizara en todo el script'''
 
         #Para saber como se llama este archivo .py que se esta ejecutando
         archivo = sys.argv[0]  # Obtengo el nombre de este  archivo
         archivoSinRuta = os.path.basename(archivo)  # Elimino la Ruta en caso de tenerla
         self.archivoActual = archivoSinRuta
-
-        self.nombreArchivoConf = 'pymanati.cfg'
-        self.fc = SafeConfigParser()
-
-        #Propiedades de la Clase
-        self.archivoLog = ''
-
-        #Ejecutar los Procesos Inciales
-        self.configInicial()
-        self.configDemonio()
-
-    def configInicial(self):
-        '''Metodo que permite extraer todos los parametros
-        del archivo de configuracion pymanati.cfg que se
-        utilizara en todo el script'''
-
-        #Obtiene Informacion del archivo de Configuracion .cfg
-        self.ruta_arch_conf = os.path.dirname(sys.argv[0])
-        self.archivo_configuracion = os.path.join(self.ruta_arch_conf, self.nombreArchivoConf)
-        self.fc.read(self.archivo_configuracion)
-
+        
         #Obtiene el nombre del archivo .log para uso del Logging
-        # (RUTAS Y archivo.log son los campos del archivo .cfg)
         seccion = 'RUTAS'
         opcion = 'archivo_log'
         self.archivoLog = self.fc.get(seccion, opcion)
@@ -57,24 +49,57 @@ class demonioServer():
         self.stdin_path = '/dev/null'
         self.stdout_path = '/dev/tty'
         self.stderr_path = '/dev/tty'
-        self.pidfile_path = '/tmp/{0}.pid'.format(self.archivoActual)
+        self.pidfile_path =  '/tmp/{0}.pid'.format(self.archivoActual)
         self.pidfile_timeout = 5
-
+       
     def configLog(self):
         '''Metodo que configura los Logs de error tanto el nombre
-        del archivo como su ubicacion asi como tambien los
+        del archivo como su ubicacion asi como tambien los 
         metodos y formato de salida'''
-
+        
         #Extrae de la clase la propiedad que contiene el nombre del archivo log
         nombreArchivoLog = self.archivoLog
-        self.logger = logging.getLogger("{0}".format(self.archivoActual))
+        self.logger = logging.getLogger("DemonioPyManati")
         self.logger.setLevel(logging.INFO)
         formatter = logging.Formatter("%(levelname)s--> %(asctime)s - %(name)s:  %(message)s", datefmt='%d/%m/%Y %I:%M:%S %p')
         handler = logging.FileHandler(nombreArchivoLog)
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         return handler
-    
+
+    def prepararPostGreSQL(self):
+        seccion = 'POSTGRESQL'
+        if self.fc.has_section(seccion):
+            host, dbname, user, password = [valores[1] for valores in self.fc.items(seccion)]
+            self.cadConex = 'host={0} dbname={1} user={2} password={3} '.format(host, dbname, user, password)
+        else:
+            mensaje = 'No existe la seccion:"{0}" dentro del archivo de configuracion'.format(seccion)
+            self.logger.error(mensaje)
+            sys.exit(0)
+
+    def conectarPostGreSQL(self):
+        try:
+            self.prepararPostGreSQL()
+            self.conn = psycopg2.connect(self.cadConex)
+            self.cur = self.conn.cursor()
+        except:
+            # Obtiene la ecepcion mas reciente
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            self.logger.error(exceptionValue)
+            sys.exit(0)
+
+    def ejecutarPostGreSQL(self, comandoSQL):
+        try:
+            self.cur.execute(comandoSQL)
+            #self.records = self.cur.fetchall()
+            #self.devolver = self.records
+        except:
+            # Obtiene la ecepcion mas reciente
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            # sale del Script e Imprime un error con lo que sucedio.
+            self.logger.error(exceptionValue)
+            sys.exit(0)
+
     def nombre_pc(self, ippc):
         '''
         metodo que permite obtener el nombre de un pc mediante
@@ -109,8 +134,8 @@ class demonioServer():
         
         t = datetime.datetime.now()
         dma_hms = t.strftime('%d_%m_%Y_%I%M%S')
-
-        if self.fc.has_section('SQUID'):
+        seccion = 'SQUID'
+        if self.fc.has_section(seccion):
             confSquid = self.fc.items('SQUID')
             self.rutaRemota, self.rutaLocal, self.archivoRemoto = [valor[1] for valor in confSquid]
                 
@@ -118,9 +143,10 @@ class demonioServer():
             self.rutaArchivoRemoto = os.path.join(self.rutaRemota, self.archivoRemoto)
                
             self.mascaraArchivo = dma_hms
-            print(self.rutaArchivoLocal)
+            #print(self.rutaArchivoLocal)
         else:
-            self.logger.error('Error al leer archivo de configuracion .cfg, no se consigue la Seccion "SQUID"')
+            self.logger.error('Error al leer archivo de configuracion .cfg, no se consigue la Seccion:"{0}"'.format(seccion))
+            sys.exit(0)
 
     def ssh_conectar(self):
         ''' Metodo que permite conectarme via ssh al servidor proxy'''
@@ -135,7 +161,9 @@ class demonioServer():
             self.logger.info('Conexion Satisfactoria con el Servidor SSH:{0}'.format(servidor))
         except:
             devolver = False
-            self.logger.error('Error al momento de conectar con el Servidor SSH:{0}'.format(servidor))
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            self.logger.error('Error al momento de conectar con el Servidor SSH:{0}:"{1}"'.format(servidor, exceptionValue))
+            sys.exit(0)
         return devolver
 
     def ssh_ejecutar(self, comando):
@@ -152,10 +180,9 @@ class demonioServer():
         if not conectarSSH:
             stdin, stdout, stderr = conectarSSH.exec_command(comando)
             error = stderr.read()
-            print(error)
             conectarSSH.close()
  
-    def leer_log(self, tupla):
+    def leer_log(self, archivoLocal):
         '''
         El log de squid viene separado por espacios en blanco , este medotdo
         recorre el archivo linea por linea y toma cada columna desechando aquellas
@@ -165,43 +192,13 @@ class demonioServer():
         '10410021221','www.foxcarlos.wordpress.com'
         '''
 
-        archivo_local = tupla[1]  
-        no_linea = 0
-    
-        '''#<POSTGRESQL>
-        host, db, user, clave = fc.opcion_consultar('POSTGRESQL')
-        cadconex = "host='%s' dbname='%s' user='%s' password='%s'" % (host[1], db[1], user[1], clave[1])   
-        pg = ConectarPG(cadconex)
+        archivo_local = archivoLocal
+        self.conectarPostGreSQL()
 
-        #</POSTGRESQL>'''
-        
         f = open(archivo_local)
         for linea in f.readlines():
-            no_linea = no_linea + 1
-            #print no_linea
             separar = linea.split()
-    
             if len(separar) > 1:
-                '''
-                El Metodo limpiar_lista() elimina de la tupla ciertas
-                condiciones que no se necesitan, por ejemplo tuplas vacias
-                '''
-                #separar = limpiar_lista(separar_tupla)
-    
-                '''
-                Aqui convierto la hora en segundos que coloca squid en
-                su archivo access.log en un formato fecha entendible
-                por humanos (dd/mm/aaa hh:mm:ss) , por ahora esta opcion
-                esta desabilitada ya que utlizo la funcion que me provee
-                PostGreSql, "to_timestamp" que hace la conversion automaticamente
-                Ej:to_timestamp(1325523994.041)
-    
-                Antes:
-                t = time.localtime(float(separar[0]))
-                lfecha = '%s/%s/%s %s:%s:%s' % \
-                    (t.tm_mday, t.tm_mon, t.tm_year, t.tm_hour, t.tm_min, t.tm_sec)
-                '''
-
                 lfecha = 'to_timestamp(%s)' % (separar[0])
                 lpuerto = separar[1]
                 lip = separar[2]
@@ -215,17 +212,19 @@ class demonioServer():
                 ldireccion = separar[6]    
                 lredireccion = separar[7]
 
-                ComandoSql = "insert into log_squid (fecha,puerto,ip,pc,acceso,\
+                comandoSQL = "insert into log_squid (fecha,puerto,ip,pc,acceso,\
                 puerto_acceso,metodo,direccion,redireccion) \
                 values ({0},'{1}','{2}','{3}','{4}','{5}','{6}',$${7}$$,$${8}$$)".\
                 format(lfecha, lpuerto, lip, lpc, lacceso, lpuerto_acceso, lmetodo, \
                 ldireccion[0:240], lredireccion)
-
-                print ComandoSql
-                #reg_devueltos = pg.ejecutar(ComandoSql)   
-                #pg.conn.commit()
+                
+                print(comandoSQL)
+                self.ejecutarPostGreSQL(comandoSQL)
+                self.conn.commit()
+        self.cur.close()
+        self.conn.close()
    
-    def ssh_copiar_log(self, tupla):
+    def copiarRemoto_log(self, tupla):
         '''
          Metodo que permite copiarme el log del servidor remoto squid
          a mi pc local, este metodo recibe como parametro una tupla
@@ -235,7 +234,7 @@ class demonioServer():
          archivo_remoto = '/var/log/squid3/access.log'
     
          tupla = (archivo_local, archivo_remoto)
-         ssh_copiar_log(tupla)
+         copiarRemoto_log(tupla)
         '''
 
         rutaArchivoRemoto, rutaArchivoLocal = tupla
@@ -264,14 +263,16 @@ class demonioServer():
     def main(self):
         '''Metodo Proncipal'''
 
-        self.nombreArchivo()       
+        self.nombreArchivo()
         #Estas son variables publicas (nombreReal y nombreCopia) generadas desde el metodo nombreArchivo()
-        nombreReal = self.rutaArchivoRemoto
-        nombreCopia = self.rutaArchivoLocal + self.mascaraArchivo
-        tupla = (nombreReal, nombreCopia)
+        self.nombreReal = self.rutaArchivoRemoto
+        self.nombreCopia = self.rutaArchivoLocal + self.mascaraArchivo
+        tupla = (self.nombreReal, self.nombreCopia)
         
         #self.preparar_log_remoto(tupla)
-        #self.ssh_copiar_log(tupla)
+        #self.copiarRemoto_log(tupla)
+        #self.leer_log(self.nombreCopia)
+
         self.leer_log(('/var/log/squid3/', '/home/cgarcia/desarrollo/python/pymanati/access.log'))
 
 
@@ -284,7 +285,9 @@ class demonioServer():
         self.logger.info('Felicidades..!, Demonio Iniciado con Exito')
 
         while True:
+            self.logger.info('Iniciando demonio')
             self.main()
+            self.logger.info('Finalizado Demonio')
 
 app = demonioServer()
 handler = app.configLog()
