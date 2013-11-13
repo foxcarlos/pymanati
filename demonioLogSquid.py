@@ -269,11 +269,11 @@ class demonioServer():
         self.nombreCopia = self.rutaArchivoLocal + self.mascaraArchivo
         tupla = (self.nombreReal, self.nombreCopia)
         
-        #self.preparar_log_remoto(tupla)
-        #self.copiarRemoto_log(tupla)
-        #self.leer_log(self.nombreCopia)
+        self.preparar_log_remoto(tupla)
+        self.copiarRemoto_log(tupla)
+        self.leer_log(self.nombreCopia)
 
-        self.leer_log(('/var/log/squid3/', '/home/cgarcia/desarrollo/python/pymanati/access.log'))
+        #self.leer_log(('/var/log/squid3/', '/home/cgarcia/desarrollo/python/pymanati/access.log'))
 
 
     def run(self):
