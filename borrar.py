@@ -19,7 +19,6 @@ class demonioServer():
         self.archivoCfg()
         self.configInicial()
         self.configDemonio()
-        self.conectarSSH = self.ssh_conectar()
 
     def archivoCfg(self):
         '''Inicializa y Obtiene Informacion del archivo de Configuracion .cfg'''
@@ -199,9 +198,9 @@ class demonioServer():
         print "error"
         print stderr_data
         session.close()
-        #self.ssh.close()
+        self.ssh.close()
 
-    def ssh_conectar(self):
+    def ssh_conectar_old(self):
         ''' Metodo que permite conectarme via ssh al servidor proxy'''
         devolver = True
         ssh = paramiko.SSHClient()
@@ -215,10 +214,10 @@ class demonioServer():
             print(servidor, int(puerto), usuario, clave) 
         except:
             devolver = False
-            #exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
             #self.logger.error('Error al momento de conectar con el Servidor SSH:{0}:"{1}"'.format(servidor, exceptionValue))
-            #print(exceptionValue)
-            #sys.exit(0)
+            print(exceptionValue)
+            sys.exit(0)
         return devolver
 
     def ssh_ejecutar(self, comando):
@@ -231,11 +230,11 @@ class demonioServer():
         si este devuelve valor 0 quiere decir que no genero ningun error
         '''
         
-        #conectarSSH = self.ssh_conectar()
-        if not self.conectarSSH:
-            stdin, stdout, stderr = self.conectarSSH.exec_command(comando)
+        conectarSSH = self.ssh_conectar()
+        if not conectarSSH:
+            stdin, stdout, stderr = conectarSSH.exec_command(comando)
             error = stderr.read()
-            #conectarSSH.close()
+            conectarSSH.close()
  
     def leer_log(self, archivoLocal):
         '''
@@ -330,10 +329,6 @@ class demonioServer():
 
         #self.leer_log(('/var/log/squid3/', '/home/cgarcia/desarrollo/python/pymanati/access.log'))
 
-    def prue(self):
-        self.logger.info('Iniciando demonio')
-        #self.ssh_ejecutar('ls /temp')
-        self.logger.info('Finalizado Demonio')
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
@@ -341,8 +336,11 @@ class demonioServer():
         el comando:
         python demonioLogSquid.py stop'''
 
-        self.logger.info('Felicidades..!, Demonio Iniciado con Exito')
-        self.prue()
+        #self.logger.info('Felicidades..!, Demonio Iniciado con Exito')
+        
+        d = self.sshConectar()
+        print(d)
+        #sleep(3600)
 
         '''
         while True:
@@ -353,8 +351,7 @@ class demonioServer():
             #self.main()
             self.logger.info('Finalizado Demonio')'''
 
-app = demonioServer()
-handler = app.configLog()
-daemon_runner = runner.DaemonRunner(app)
-daemon_runner.daemon_context.files_preserve = [handler.stream]
-daemon_runner.do_action()
+if __name__ == '__main__':
+    app = demonioServer()
+    app.run()
+
