@@ -297,13 +297,10 @@ class demonioServer():
             hora = fecha.hour
             if hora >= horaEjecutar:
                 self.logger.info('Iniciando demonio')
-                self.prue()
+                self.main()
                 self.logger.info('Finalizado Demonio')
 
 if __name__ == '__main__':
     app = demonioServer()
     handler = app.configLog()
     app.run()
-    #daemon_runner = runner.DaemonRunner(app)
-    #daemon_runner.daemon_context.files_preserve = [handler.stream]
-    #daemon_runner.do_action()
