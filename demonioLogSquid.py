@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from daemon import runner
 import logging
 import os
 import sys
@@ -9,8 +8,7 @@ import paramiko
 import datetime
 import psycopg2
 import socket
-from time import sleep
-
+import datetime
 
 class demonioServer():
     def __init__(self):
@@ -19,7 +17,6 @@ class demonioServer():
         self.archivoCfg()
         self.configInicial()
         self.configDemonio()
-        self.conectarSSH = self.ssh_conectar()
 
     def archivoCfg(self):
         '''Inicializa y Obtiene Informacion del archivo de Configuracion .cfg'''
@@ -151,74 +148,23 @@ class demonioServer():
             self.logger.error('Error al leer archivo de configuracion .cfg, no se consigue la Seccion:"{0}"'.format(seccion))
             sys.exit(0)
     
-    def sshConectar(self):
-        ''' Metodo que permite conectarme via ssh al servidor proxy'''
-
-        confSquid = self.fc.items('SSH')
-        servidor, puerto, usuario, clave = [valores[1] for valores in confSquid]
-        
-        devolver = False
-       
-        try:
-            self.ssh = paramiko.Transport((servidor, int(puerto)))
-            self.ssh.connect(username=usuario, password=clave)
-            print('Listo')
-            devolver = True
-        except:
-            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-            self.logger.error(exceptionValue)
-        return devolver
-
-    def sshEjecutar(self, comandoSSH):
-        ''' Metodo que ejecuta un comando remoto via SSH pasado como 
-        parametro ej: sshEjecutar('ls')'''
-
-        nbytes = 4096
-        comando = comandoSSH
-        stdout_data = []
-        stderr_data = []
-        
-        session = self.ssh.open_channel(kind='session')
-        session.exec_command(comando)
-        exit_status = session.recv_exit_status()
-        
-        while session.recv_ready():
-            stdout_data.append(session.recv(nbytes))
-            stdout_data = "".join(stdout_data)
-    
-        while session.recv_stderr_ready():
-            stderr_data.append(session.recv_stderr(nbytes))
-            stderr_data = "".join(stderr_data)
-        
-        if stderr_data:
-            self.logger.error(stderr_data)
-
-        print "exit status", exit_status
-        print "output"
-        print stdout_data
-        print "error"
-        print stderr_data
-        session.close()
-        #self.ssh.close()
-
     def ssh_conectar(self):
         ''' Metodo que permite conectarme via ssh al servidor proxy'''
         devolver = True
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         confSquid = self.fc.items('SSH')
         servidor, puerto, usuario, clave = [valores[1] for valores in confSquid]
         try:
-            ssh.connect(servidor, int(puerto), usuario, clave)
-            #self.logger.info('Conexion Satisfactoria con el Servidor SSH:{0}'.format(servidor))
+            self.ssh.connect(servidor, int(puerto), usuario, clave)
+            self.logger.info('Conexion Satisfactoria con el Servidor SSH:{0}'.format(servidor))
             print(servidor, int(puerto), usuario, clave) 
         except:
             devolver = False
-            #exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-            #self.logger.error('Error al momento de conectar con el Servidor SSH:{0}:"{1}"'.format(servidor, exceptionValue))
-            #print(exceptionValue)
-            #sys.exit(0)
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            self.logger.error('Error al momento de conectar con el Servidor SSH:{0}:"{1}"'.format(servidor, exceptionValue))
+            sys.exit(0)
         return devolver
 
     def ssh_ejecutar(self, comando):
@@ -231,11 +177,13 @@ class demonioServer():
         si este devuelve valor 0 quiere decir que no genero ningun error
         '''
         
-        #conectarSSH = self.ssh_conectar()
+        self.conectarSSH = self.ssh_conectar()
         if not self.conectarSSH:
-            stdin, stdout, stderr = self.conectarSSH.exec_command(comando)
+            stdin, stdout, stderr = self.ssh.exec_command(comando)
             error = stderr.read()
-            #conectarSSH.close()
+            salida = stdout.read()
+            print(error, salida)
+            self.conectarSSH.close()
  
     def leer_log(self, archivoLocal):
         '''
@@ -331,9 +279,11 @@ class demonioServer():
         #self.leer_log(('/var/log/squid3/', '/home/cgarcia/desarrollo/python/pymanati/access.log'))
 
     def prue(self):
+        print('entro')
         self.logger.info('Iniciando demonio')
-        #self.ssh_ejecutar('ls /temp')
+        self.ssh_ejecutar('ls /temp')
         self.logger.info('Finalizado Demonio')
+        print('se salio')
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
@@ -341,20 +291,19 @@ class demonioServer():
         el comando:
         python demonioLogSquid.py stop'''
 
-        self.logger.info('Felicidades..!, Demonio Iniciado con Exito')
-        self.prue()
-
-        '''
+        horaEjecutar = 17
         while True:
-            self.logger.info('Iniciando demonio')
-            self.sshConectar()
-            sys.exit(0)
-            #self.sshEjecutar('ls /temp')
-            #self.main()
-            self.logger.info('Finalizado Demonio')'''
+            fecha = datetime.datetime.now()
+            hora = fecha.hour
+            if hora >= horaEjecutar:
+                self.logger.info('Iniciando demonio')
+                self.prue()
+                self.logger.info('Finalizado Demonio')
 
-app = demonioServer()
-handler = app.configLog()
-daemon_runner = runner.DaemonRunner(app)
-daemon_runner.daemon_context.files_preserve = [handler.stream]
-daemon_runner.do_action()
+if __name__ == '__main__':
+    app = demonioServer()
+    handler = app.configLog()
+    app.run()
+    #daemon_runner = runner.DaemonRunner(app)
+    #daemon_runner.daemon_context.files_preserve = [handler.stream]
+    #daemon_runner.do_action()
