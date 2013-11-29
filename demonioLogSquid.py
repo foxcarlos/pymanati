@@ -61,7 +61,11 @@ class demonioServer():
         nombreArchivoLog = self.archivoLog
         self.logger = logging.getLogger("DemonioPyManati")
         self.logger.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(levelname)s--> %(asctime)s - %(name)s:  %(message)s", datefmt='%d/%m/%Y %I:%M:%S %p')
+        #formatter = logging.Formatter("%(levelname)s--> %(asctime)s - %(name)s:  %(message)s", datefmt='%d/%m/%Y %I:%M:%S %p')
+        
+        #2013/11/28 15:13:53| WARNING:
+        formatter = logging.Formatter("%(asctime)s| %(name)s| %(levelname)s: %(message)s", datefmt='%Y/%m/%d %I:%M:%S %p')
+
         handler = logging.FileHandler(nombreArchivoLog)
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
@@ -158,8 +162,7 @@ class demonioServer():
         servidor, puerto, usuario, clave = [valores[1] for valores in confSquid]
         try:
             self.ssh.connect(servidor, int(puerto), usuario, clave)
-            self.logger.info('Conexion Satisfactoria con el Servidor SSH:{0}'.format(servidor))
-            print(servidor, int(puerto), usuario, clave) 
+            self.logger.info('Conexion Satisfactoria con el Servidor SSH:{0}'.format(servidor)) 
         except:
             devolver = False
             exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
@@ -168,22 +171,27 @@ class demonioServer():
         return devolver
 
     def ssh_ejecutar(self, comando):
-        '''
+        ''' ssh_ejecutar('ls -l' ) 
+        Parametros de Entrada: 1 tipo:string
+
         El Metodo ssh_ejecutar ejecuta un comando del sistema operativo remoto
-        via ssh.
-    
-        Valor Devuelto: El metodo devuelve el mensaje de error, si quiero saber si
-        genero error simplemente busco la longitud del mensaje "len(error)"
-        si este devuelve valor 0 quiere decir que no genero ningun error
-        '''
+        via ssh.'''
         
         self.conectarSSH = self.ssh_conectar()
-        if not self.conectarSSH:
+        if self.conectarSSH:
             stdin, stdout, stderr = self.ssh.exec_command(comando)
             error = stderr.read()
             salida = stdout.read()
-            print(error, salida)
-            self.conectarSSH.close()
+            
+            if error:
+                self.logger.error('Error al momento de ejecutar el comando "{0}" :{1}'.format(comando, error))
+
+            if salida:
+                self.logger.info('El Comando {0} devolvio lo siguiente:{1}'.format(comando, salida))
+
+            self.ssh.close()
+        else:
+            self.logger.error('no se pudo ejecutar el comando:{0}'.format(comando))
  
     def leer_log(self, archivoLocal):
         '''
@@ -242,11 +250,16 @@ class demonioServer():
 
         rutaArchivoRemoto, rutaArchivoLocal = tupla
         ssh_cnx = self.ssh_conectar()
-        if not ssh_cnx:
-            ftp = ssh_cnx.open_sftp()
-            ftp.get(rutaArchivoRemoto, rutaArchivoLocal)
-            ftp.close()
-            ssh_cnx.close()
+        if ssh_cnx:
+            ftp = self.ssh.open_sftp()
+            try:
+                ftp.get(rutaArchivoRemoto, rutaArchivoLocal)
+                ftp.close()
+            except:
+                exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+                self.logger.error('Ocurrio un error al momento de copiar el archivo via ssh:{0}'.format(exceptionValue))
+
+            self.ssh.close()
 
     def preparar_log_remoto(self, tupla):
         '''Este metodo se conecta via SSH con el servidor proxy
@@ -264,26 +277,21 @@ class demonioServer():
         self.ssh_ejecutar('/etc/init.d/squid3 start')
 
     def main(self):
-        '''Metodo Proncipal'''
+        '''Metodo Principal'''
 
+        #El metodo nombreArchivo permite obtener del archivo de configuracion 
+        #Las rutas y nombre de los archivos a copiar y renombrar
         self.nombreArchivo()
-        #Estas son variables publicas (nombreReal y nombreCopia) generadas desde el metodo nombreArchivo()
-        self.nombreReal = self.rutaArchivoRemoto
-        self.nombreCopia = self.rutaArchivoLocal + self.mascaraArchivo
-        tupla = (self.nombreReal, self.nombreCopia)
+
+        #Hacer una Copia de Access.log y copiarlo con otro nombre
+        self.nombreCopia = self.rutaArchivoRemoto + self.mascaraArchivo
+        self.preparar_log_remoto((self.rutaArchivoRemoto, self.nombreCopia))
+
+        #Copiar el archivo remoto para el pc local y poder tratarlo
+        self.copiarRemoto_log((self.nombreCopia, self.rutaArchivoLocal + self.mascaraArchivo))
         
-        self.preparar_log_remoto(tupla)
-        self.copiarRemoto_log(tupla)
-        self.leer_log(self.nombreCopia)
-
+        self.leer_log(self.rutaArchivoLocal + self.mascaraArchivo)
         #self.leer_log(('/var/log/squid3/', '/home/cgarcia/desarrollo/python/pymanati/access.log'))
-
-    def prue(self):
-        print('entro')
-        self.logger.info('Iniciando demonio')
-        self.ssh_ejecutar('ls /temp')
-        self.logger.info('Finalizado Demonio')
-        print('se salio')
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
@@ -291,7 +299,7 @@ class demonioServer():
         el comando:
         python demonioLogSquid.py stop'''
 
-        horaEjecutar = 17
+        horaEjecutar = 11
         while True:
             fecha = datetime.datetime.now()
             hora = fecha.hour
@@ -299,6 +307,7 @@ class demonioServer():
                 self.logger.info('Iniciando demonio')
                 self.main()
                 self.logger.info('Finalizado Demonio')
+                sys.exit(0)
 
 if __name__ == '__main__':
     app = demonioServer()
