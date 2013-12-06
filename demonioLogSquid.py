@@ -59,7 +59,7 @@ class demonioServer():
         
         #Extrae de la clase la propiedad que contiene el nombre del archivo log
         nombreArchivoLog = self.archivoLog
-        self.logger = logging.getLogger("DemonioPyManati")
+        self.logger = logging.getLogger("{0}".format(self.archivoActual))
         self.logger.setLevel(logging.INFO)
         #formatter = logging.Formatter("%(levelname)s--> %(asctime)s - %(name)s:  %(message)s", datefmt='%d/%m/%Y %I:%M:%S %p')
         
@@ -281,17 +281,18 @@ class demonioServer():
 
         #El metodo nombreArchivo permite obtener del archivo de configuracion 
         #Las rutas y nombre de los archivos a copiar y renombrar
-        self.nombreArchivo()
+        ##self.nombreArchivo()
 
         #Hacer una Copia de Access.log y copiarlo con otro nombre
-        self.nombreCopia = self.rutaArchivoRemoto + self.mascaraArchivo
-        self.preparar_log_remoto((self.rutaArchivoRemoto, self.nombreCopia))
+        ##self.nombreCopia = self.rutaArchivoRemoto + self.mascaraArchivo
+        ##self.preparar_log_remoto((self.rutaArchivoRemoto, self.nombreCopia))
 
         #Copiar el archivo remoto para el pc local y poder tratarlo
-        self.copiarRemoto_log((self.nombreCopia, self.rutaArchivoLocal + self.mascaraArchivo))
+        ##self.copiarRemoto_log((self.nombreCopia, self.rutaArchivoLocal + self.mascaraArchivo))
         
-        self.leer_log(self.rutaArchivoLocal + self.mascaraArchivo)
-        #self.leer_log(('/var/log/squid3/', '/home/cgarcia/desarrollo/python/pymanati/access.log'))
+        ##self.leer_log(self.rutaArchivoLocal + self.mascaraArchivo)
+        self.leer_log('/home/cgarcia/respaldo_pg/pymanati/logs/access.log.128_11_2013_033418')
+        self.leer_log('/home/cgarcia/respaldo_pg/pymanati/logs/access.log.129_11_2013_112730')
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
@@ -299,7 +300,7 @@ class demonioServer():
         el comando:
         python demonioLogSquid.py stop'''
 
-        horaEjecutar = 11
+        horaEjecutar = 7
         while True:
             fecha = datetime.datetime.now()
             hora = fecha.hour
