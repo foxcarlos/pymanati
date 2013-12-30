@@ -234,8 +234,38 @@ class demonioServer():
                 self.conn.commit()
         self.cur.close()
         self.conn.close()
-   
-    def copiarRemoto_log(self, tupla):
+
+    def leerLog(self, tupla):
+        ''' Este metodo permite  tratar el archivo .LOG que se copio 
+        desde el servidor squid hasta el pc local reccoriendo line a 
+        linea y ordenar cada fila para poder crear un archivo separado
+        por comas CSV para luego con otro proceso hacer el COPY TO a 
+        PostgreSQL'''
+    
+        l = ''
+        archivo_local, archivoCSV = tupla
+        
+        with open(archivo_local) as archivo:
+            for fila in archivo.readlines():
+                separar = fila.split()
+                fechaStamp, puerto, ip, acceso, puerto_acceso, \
+                metodo, direccion, redirect1, redirect2, redirect3 = separar
+                
+                fechaChar = datetime.datetime.fromtimestamp(float(fechaStamp))
+                fecha = fechaChar.strftime('%Y-%m-%d %I:%M:%S')
+                pc = ''  # self.nombre_pc(ip.strip())
+                direccion =  direccion[0:240]
+                direccion = direccion.replace(',', '')
+                
+                l = '{0},{1},{2},{3},{4},{5},{6},{7}\n'.format(\
+                fecha, puerto, ip, pc, acceso, puerto_acceso, metodo, direccion)
+                
+                with open(archivoCSV, 'a') as n:
+                    n.write(l)
+                    n.close()
+        archivo.close()
+
+    def importarRemotoLog(self, tupla):
         '''
          Metodo que permite copiarme el log del servidor remoto squid
          a mi pc local, este metodo recibe como parametro una tupla
@@ -254,11 +284,37 @@ class demonioServer():
             ftp = self.ssh.open_sftp()
             try:
                 ftp.get(rutaArchivoRemoto, rutaArchivoLocal)
+                #ftp.put(local_path, remote_path)
                 ftp.close()
             except:
                 exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
                 self.logger.error('Ocurrio un error al momento de copiar el archivo via ssh:{0}'.format(exceptionValue))
 
+            self.ssh.close()
+
+    def exportarRemotoLog(self, tupla):
+        '''
+         Metodo que permite copiar el .csv local al servidor remoro
+         recibe como parametro una tupla con los nombres del archivo 
+         tanto local como remoto
+         Ej:
+         archivo_local = '/home/cgarcia/desarrollo/python/agr/log/access.csv'
+         archivo_remoto = '/var/log/squid3/access.csv'
+    
+         tupla = (archivo_local, archivo_remoto)
+         copiarRemoto_log(tupla)
+        '''
+
+        rutaArchivoRemoto, rutaArchivoLocal = tupla
+        ssh_cnx = self.ssh_conectar()
+        if ssh_cnx:
+            ftp = self.ssh.open_sftp()
+            try:
+                ftp.put(rutaArchivoLocal, rutaArchivoRemoto)
+                ftp.close()
+            except:
+                exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+                self.logger.error('Ocurrio un error al momento de copiar el archivo .csv via ssh:{0}'.format(exceptionValue))
             self.ssh.close()
 
     def preparar_log_remoto(self, tupla):
@@ -281,18 +337,27 @@ class demonioServer():
 
         #El metodo nombreArchivo permite obtener del archivo de configuracion 
         #Las rutas y nombre de los archivos a copiar y renombrar
-        ##self.nombreArchivo()
+        self.nombreArchivo()
+
+        rutaRemota = self.rutaRemota
+        archivoConRutaLocal = self.rutaArchivoLocal
+        archivoConRutaRemota = self.rutaArchivoRemoto
+        mascara = self.mascaraArchivo
 
         #Hacer una Copia de Access.log y copiarlo con otro nombre
-        ##self.nombreCopia = self.rutaArchivoRemoto + self.mascaraArchivo
-        ##self.preparar_log_remoto((self.rutaArchivoRemoto, self.nombreCopia))
+        self.nombreCopia = archivoConRutaRemota + mascara
+        self.preparar_log_remoto((archivoConRutaRemota, self.nombreCopia))
 
         #Copiar el archivo remoto para el pc local y poder tratarlo
-        ##self.copiarRemoto_log((self.nombreCopia, self.rutaArchivoLocal + self.mascaraArchivo))
+        self.importarRemotoLog((self.nombreCopia, archivoConRutaLocal + mascara))
         
-        ##self.leer_log(self.rutaArchivoLocal + self.mascaraArchivo)
-        self.leer_log('/home/cgarcia/respaldo_pg/pymanati/logs/access.log.128_11_2013_033418')
-        self.leer_log('/home/cgarcia/respaldo_pg/pymanati/logs/access.log.129_11_2013_112730')
+        #Tratar el archivo .log LOCAL para transformarlo en un archivo .CSV
+        self.leerLog((archivoConRutaLocal + mascara, archivoConRutaLocal + mascara + '.csv'))
+
+        #Copiar el archivo local .csv al servidor remoto para luego hacerle en copy to de PostGreSQL
+        al = archivoConRutaLocal + mascara + '.csv'
+        ar = archivoConRutaRemota + mascara + '.csv'
+        self.exportarRemotoLog((ar, al))
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
