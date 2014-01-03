@@ -339,7 +339,6 @@ class demonioServer():
         #Las rutas y nombre de los archivos a copiar y renombrar
         self.nombreArchivo()
 
-        rutaRemota = self.rutaRemota
         archivoConRutaLocal = self.rutaArchivoLocal
         archivoConRutaRemota = self.rutaArchivoRemoto
         mascara = self.mascaraArchivo
@@ -358,6 +357,16 @@ class demonioServer():
         al = archivoConRutaLocal + mascara + '.csv'
         ar = archivoConRutaRemota + mascara + '.csv'
         self.exportarRemotoLog((ar, al))
+
+        #PostGreSQL
+        comandoSQL = """copy log_squid (fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion) 
+                        from '{0}' delimiter ',' """.format(ar)
+
+        self.conectarPostGreSQL()
+        self.ejecutarPostGreSQL(comandoSQL)
+        self.cur.close()
+        self.conn.close()
+
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
