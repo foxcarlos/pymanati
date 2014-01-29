@@ -141,11 +141,12 @@ class demonioServer():
         seccion = 'SQUID'
         if self.fc.has_section(seccion):
             confSquid = self.fc.items('SQUID')
-            self.rutaRemota, self.rutaLocal, self.archivoRemoto = [valor[1] for valor in confSquid]
+            self.rutaRemota, self.rutaLocal, self.archivoRemoto, self.rutaCSV = [valor[1] for valor in confSquid]
                 
             self.rutaArchivoLocal = os.path.join(self.rutaLocal, self.archivoRemoto)
             self.rutaArchivoRemoto = os.path.join(self.rutaRemota, self.archivoRemoto)
-               
+            self.rutaArchivoCSV = os.path.join(self.rutaCSV, self.archivoRemoto)
+
             self.mascaraArchivo = dma_hms
             #print(self.rutaArchivoLocal)
         else:
@@ -248,8 +249,14 @@ class demonioServer():
         with open(archivo_local) as archivo:
             for fila in archivo.readlines():
                 separar = fila.split()
-                fechaStamp, puerto, ip, acceso, puerto_acceso, \
-                metodo, direccion, redirect1, redirect2, redirect3 = separar
+                print(separar)
+                try:
+                    fechaStamp, puerto, ip, acceso, puerto_acceso, \
+                    metodo, direccion, redirect1, redirect2, redirect3 = separar
+                except:
+                    fechaStamp, puerto, ip, acceso, puerto_acceso, metodo, \
+                    direccion, redirect1, redirect2, redirect3 = \
+                    ['1390852504.791', '1111', '10.0.0.0', 'TCP_MISS/200', '7814', 'CONNECT', 'Error', '-', 'error', '-']
                 
                 fechaChar = datetime.datetime.fromtimestamp(float(fechaStamp))
                 fecha = fechaChar.strftime('%Y-%m-%d %I:%M:%S')
@@ -299,23 +306,37 @@ class demonioServer():
          tanto local como remoto
          Ej:
          archivo_local = '/home/cgarcia/desarrollo/python/agr/log/access.csv'
-         archivo_remoto = '/var/log/squid3/access.csv'
+         archivo_remoto = '/home/administrador/csv/access.csv'
     
          tupla = (archivo_local, archivo_remoto)
          copiarRemoto_log(tupla)
         '''
 
         rutaArchivoRemoto, rutaArchivoLocal = tupla
-        ssh_cnx = self.ssh_conectar()
-        if ssh_cnx:
-            ftp = self.ssh.open_sftp()
+        
+        self.ssh2 = paramiko.SSHClient()
+        self.ssh2.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        ssh_cnx2 = False
+        servidor, puerto, usuario, clave = ['10.121.6.4', '22', 'administrador', 'shc21152115']
+        try:
+            self.ssh2.connect(servidor, int(puerto), usuario, clave)
+            self.logger.info('Conexion Satisfactoria con el Servidor SSH:{0}'.format(servidor))
+            ssh_cnx2 = True
+        except:
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            self.logger.error('Error al momento de conectar con el Servidor SSH:{0}:"{1}"'.format(servidor, exceptionValue))
+            sys.exit(0)
+        
+        if ssh_cnx2:
+            ftp2 = self.ssh2.open_sftp()
             try:
-                ftp.put(rutaArchivoLocal, rutaArchivoRemoto)
-                ftp.close()
+                ftp2.put(rutaArchivoLocal, rutaArchivoRemoto)
+                ftp2.close()
             except:
                 exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
                 self.logger.error('Ocurrio un error al momento de copiar el archivo .csv via ssh:{0}'.format(exceptionValue))
-            self.ssh.close()
+            self.ssh2.close()
 
     def preparar_log_remoto(self, tupla):
         '''Este metodo se conecta via SSH con el servidor proxy
@@ -355,18 +376,29 @@ class demonioServer():
 
         #Copiar el archivo local .csv al servidor remoto para luego hacerle en copy to de PostGreSQL
         al = archivoConRutaLocal + mascara + '.csv'
-        ar = archivoConRutaRemota + mascara + '.csv'
+        ar = self.rutaArchivoCSV + mascara + '.csv'
         self.exportarRemotoLog((ar, al))
 
         #PostGreSQL
         comandoSQL = """copy log_squid (fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion) 
                         from '{0}' delimiter ',' """.format(ar)
 
+        print(comandoSQL.strip())
         self.conectarPostGreSQL()
         self.ejecutarPostGreSQL(comandoSQL)
         self.cur.close()
         self.conn.close()
 
+        #Eliminar la copia del archivo LOG que se guarda en el proxy
+        #el cual se hace en el metodo preparar_log_remoto()
+        self.ssh_ejecutar('rm {0}'.format(self.nombreCopia))
+
+        #Eliminar el archivo .log y .csv local
+        os.system('rm {0}'.format(archivoConRutaLocal + mascara))
+        os.system('rm {0}'.format(archivoConRutaLocal + mascara + '.csv'))
+
+        #Eliminar el archivo .csv que se guardo en postgresql
+        #ar
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
