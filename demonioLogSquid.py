@@ -347,11 +347,11 @@ class demonioServer():
             - Inicia de nuevo el proxy'''
         
         nombre_real, nombre_copia = tupla
-        self.ssh_ejecutar('/etc/init.d/squid3 stop')
+        #self.ssh_ejecutar('/etc/init.d/squid3 stop')
         self.ssh_ejecutar('mv {0} {1}'.format(nombre_real, nombre_copia))
         self.ssh_ejecutar('echo > {0}'.format(nombre_real))
         self.ssh_ejecutar('chown proxy:proxy {0}'.format(nombre_real))
-        self.ssh_ejecutar('/etc/init.d/squid3 start')
+        #self.ssh_ejecutar('/etc/init.d/squid3 start')
 
     def main(self):
         '''Metodo Principal'''
@@ -383,7 +383,7 @@ class demonioServer():
         comandoSQL = """copy log_squid (fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion) 
                         from '{0}' delimiter ',' """.format(ar)
 
-        print(comandoSQL.strip())
+        #print(comandoSQL.strip())
         self.conectarPostGreSQL()
         self.ejecutarPostGreSQL(comandoSQL)
         self.cur.close()
@@ -391,9 +391,11 @@ class demonioServer():
 
         #Eliminar la copia del archivo LOG que se guarda en el proxy
         #el cual se hace en el metodo preparar_log_remoto()
+        print('Eliminando archivo .log del proxy')
         self.ssh_ejecutar('rm {0}'.format(self.nombreCopia))
 
         #Eliminar el archivo .log y .csv local
+        print('Eliminando .log y .csv del pc Local')
         os.system('rm {0}'.format(archivoConRutaLocal + mascara))
         os.system('rm {0}'.format(archivoConRutaLocal + mascara + '.csv'))
 
