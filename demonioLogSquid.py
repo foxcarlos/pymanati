@@ -230,7 +230,7 @@ class demonioServer():
                 format(lfecha, lpuerto, lip, lpc, lacceso, lpuerto_acceso, lmetodo, \
                 ldireccion[0:240], lredireccion)
                 
-                print(comandoSQL)
+                #print(comandoSQL)
                 self.ejecutarPostGreSQL(comandoSQL)
                 self.conn.commit()
         self.cur.close()
@@ -249,7 +249,7 @@ class demonioServer():
         with open(archivo_local) as archivo:
             for fila in archivo.readlines():
                 separar = fila.split()
-                print(separar)
+                #print(separar)
                 try:
                     fechaStamp, puerto, ip, acceso, puerto_acceso, \
                     metodo, direccion, redirect1, redirect2, redirect3 = separar
