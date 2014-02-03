@@ -384,7 +384,7 @@ class demonioServer():
         comandoSQL = """copy log_squid (fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion) 
                         from '{0}' delimiter ',' """.format(ar)
 
-        #print(comandoSQL.strip())
+        self.logger.info(comandoSQL.strip())
         self.conectarPostGreSQL()
         self.ejecutarPostGreSQL(comandoSQL)
         self.cur.close()
@@ -392,11 +392,11 @@ class demonioServer():
 
         #Eliminar la copia del archivo LOG que se guarda en el proxy
         #el cual se hace en el metodo preparar_log_remoto()
-        print('Eliminando archivo .log del proxy')
+        self.logger.info('Eliminando archivo .log del proxy')
         self.ssh_ejecutar('rm {0}'.format(self.nombreCopia))
 
         #Eliminar el archivo .log y .csv local
-        print('Eliminando .log y .csv del pc Local')
+        self.logger.info('Eliminando .log y .csv del pc Local')
         os.system('rm {0}'.format(archivoConRutaLocal + mascara))
         os.system('rm {0}'.format(archivoConRutaLocal + mascara + '.csv'))
 
