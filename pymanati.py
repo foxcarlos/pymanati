@@ -49,8 +49,15 @@ class ControlMainWindow(QtGui.QMainWindow):
         toda la aplicacion como variable Publica
         '''
 
-        host, db, user, clave = fc.opcion_consultar('POSTGRESQL')
-        self.cadconex = "host='%s' dbname='%s' user='%s' password='%s'" % (host[1], db[1], user[1], clave[1])
+        self.archivoCfg()
+
+        #Antes:
+        #host, db, user, clave = fc.opcion_consultar('POSTGRESQL')
+        #self.cadconex = "host='%s' dbname='%s' user='%s' password='%s'" % (host[1], db[1], user[1], clave[1])
+        
+        #Ahora
+        self.prepararPostGreSQL()
+
         self.ui.txtFechaDesde.setFocus()
         self.registros = []
 
@@ -60,7 +67,56 @@ class ControlMainWindow(QtGui.QMainWindow):
             self.ui.btnLimpiar.setIconSize(QtCore.QSize(35, 35))
             self.ui.btnExportar.setIconSize(QtCore.QSize(35, 35))
             self.ui.btnSalir.setIconSize(QtCore.QSize(35, 35))
-    
+
+    def archivoCfg(self):
+        '''Inicializa y Obtiene Informacion del archivo de Configuracion .cfg'''
+
+        self.nombreArchivoConf = 'pymanati.cfg'
+        self.fc = ConfigParser.ConfigParser()
+
+        self.ruta_arch_conf = os.path.dirname(os.path.abspath(__file__))
+        self.archivo_configuracion = os.path.join(self.ruta_arch_conf, self.nombreArchivoConf)
+        self.fc.read(self.archivo_configuracion)
+   
+    def prepararPostGreSQL(self):
+        seccion = 'POSTGRESQL'
+        if self.fc.has_section(seccion):
+            host, dbname, user, password = [valores[1] for valores in self.fc.items(seccion)]
+            self.cadConex = 'host={0} dbname={1} user={2} password={3} '.format(host, dbname, user, password)
+        else:
+            mensaje = 'No existe la seccion:"{0}" dentro del archivo de configuracion'.format(seccion)
+            self.logger.error(mensaje)
+            sys.exit(0)
+
+    def conectarPostGreSQL(self):
+        try:
+            self.prepararPostGreSQL()
+            self.conn = psycopg2.connect(self.cadConex)
+            self.cur = self.conn.cursor()
+        except:
+            # Obtiene la ecepcion mas reciente
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            self.logger.error(exceptionValue)
+            sys.exit(0)
+
+    def ejecutarPostGreSQL(self, comandoSQL):
+        '''Este Metodo permite elecutar una sentencia SQL pasada como parametro
+        y devuelve una lista con los registros'''
+
+        self.devolver = []
+
+        try:
+            self.cur.execute(comandoSQL)
+            self.records = self.cur.fetchall()
+            self.devolver = self.records
+        except:
+            # Obtiene la ecepcion mas reciente
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            # sale del Script e Imprime un error con lo que sucedio.
+            self.logger.error(exceptionValue)
+            sys.exit(0)
+        return self.devolver
+
     def tipoBusqueda(self):
         if self.ui.radiobBuscar.isChecked():
             self.validarBusqueda()
@@ -261,6 +317,10 @@ o que realice una busqueda de almenos 3 campos'
 
         Ej: obtener_datos('select *from tabla where condicion')
         '''
+        self.conectarPostGreSQL()
+        registros = self.ejecutarPostGreSQL(cadena_pasada)
+
+        '''
         try:
             pg = ConectarPG(self.cadconex)
             registros = pg.ejecutar(cadena_pasada)
@@ -268,6 +328,7 @@ o que realice una busqueda de almenos 3 campos'
             pg.conn.close()
         except:
             registros = []
+        '''
         return registros
 
     def exportarExcel(self):
