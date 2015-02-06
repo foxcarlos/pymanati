@@ -6,6 +6,7 @@ import os
 import sys
 import ConfigParser
 import paramiko
+import pxssh
 import datetime
 import psycopg2
 import socket
@@ -157,6 +158,27 @@ class demonioServer():
             self.logger.error('Error al leer archivo de configuracion .cfg, no se consigue la Seccion:"{0}"'.format(seccion))
             #sys.exit(0)
 
+    def sshConectar(self):
+        ''' '''
+        devolver = True
+        self.ssh = pxssh.pxssh()
+        confSquid = self.fc.items('SSH')
+        servidor, puerto, usuario, clave = [valores[1] for valores in confSquid]
+        try:
+            self.ssh.login(servidor,  usuario, clave, port=puerto)
+            #self.ssh.sendline('uptime')
+            #self.ssh.prompt()
+            #print(self.ssh.before)
+            #self.ssh.logout()
+            self.logger.info('Conexion Satisfactoria con el Servidor SSH:{0}'.format(servidor))
+        except:
+            devolver = False
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            self.logger.error('Error al momento de conectar con el Servidor SSH:{0}:"{1}"'.format(servidor, exceptionValue))
+            sys.exit(0)
+        return devolver
+
+
     def ssh_conectar(self):
         ''' Metodo que permite conectarme via ssh al servidor proxy'''
         devolver = True
@@ -174,6 +196,41 @@ class demonioServer():
             self.logger.error('Error al momento de conectar con el Servidor SSH:{0}:"{1}"'.format(servidor, exceptionValue))
             sys.exit(0)
         return devolver
+
+    def sshEjecutar(self, comando):
+        ''' ssh_ejecutar('ls -l' )
+        Parametros de Entrada: 1 tipo:string
+
+        El Metodo ssh_ejecutar ejecuta un comando del sistema operativo remoto
+        via ssh.'''
+
+        comando = 'mongoimport -d  pymanati -c log_squid --stopOnError --type csv --file {0} --ignoreBlanks \
+            --fields fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion'.format(al)
+        try:
+            ejecutar = subprocess.Popen(comando, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+            errorEnComando = ejecutar.stderr.read()
+
+            if errorEnComando:
+                self.logger.info('Ocurrio el siguiente error:{0} ejecutando el comando:{1}'.format(errorEnComando, comando))
+            else:
+
+                #Limpiar Log y copia del .log  del server remoto
+                self.nombreCopia = archivoConRutaRemota + mascara
+                self.limpiarLogRemoto((archivoConRutaRemota, self.nombreCopia))
+
+                #Eliminar el archivo .log y .csv local
+                self.logger.info('Eliminando .log:{0} del pc local'.format(archivoConRutaLocal + mascara))
+                self.logger.info('Eliminando .csv:{0} del pc local'.format(archivoConRutaLocal + mascara + '.csv'))
+                os.system('rm {0}'.format(archivoConRutaLocal + mascara))
+                os.system('rm {0}'.format(archivoConRutaLocal + mascara + '.csv'))
+
+                #Eliminar el archivo .csv que se guardo en postgresql
+                #ar
+        except:
+            # Obtiene la ecepcion mas reciente
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            #sale del Script e Imprime un error con lo que sucedio
+            self.logger.error(exceptionValue)
 
     def ssh_ejecutar(self, comando):
         ''' ssh_ejecutar('ls -l' )
@@ -391,6 +448,8 @@ class demonioServer():
 
         #Hacer una Copia de Access.log y copiarlo con otro nombre
         self.nombreCopia = archivoConRutaRemota + mascara
+        self.sshConectar()
+        exit(0)
         self.prepararLogRemoto((archivoConRutaRemota, self.nombreCopia))
 
         #Copiar el archivo remoto para el pc local y poder tratarlo
