@@ -197,36 +197,28 @@ class demonioServer():
             sys.exit(0)
         return devolver
 
-    def sshEjecutar(self, comando):
+    def sshEjecutar(self, comandoEjecutar):
         ''' ssh_ejecutar('ls -l' )
         Parametros de Entrada: 1 tipo:string
-
         El Metodo ssh_ejecutar ejecuta un comando del sistema operativo remoto
         via ssh.'''
 
-        comando = 'mongoimport -d  pymanati -c log_squid --stopOnError --type csv --file {0} --ignoreBlanks \
-            --fields fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion'.format(al)
+        confSquid = self.fc.items('SSH')
+        servidor, puerto, usuario, clave = [valores[1] for valores in confSquid]
+
+        comandoSSH = comandoEjecutar
+        comando = 'ssh {0}@{1} {2} '.format(usuario, servidor, comandoSSH)
         try:
             ejecutar = subprocess.Popen(comando, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
             errorEnComando = ejecutar.stderr.read()
+            print(comando)
 
             if errorEnComando:
-                self.logger.info('Ocurrio el siguiente error:{0} ejecutando el comando:{1}'.format(errorEnComando, comando))
-            else:
+                self.logger.error('Ocurrio el siguiente error:{0} ejecutando el comando:{1}'.format(errorEnComando, comando))
 
-                #Limpiar Log y copia del .log  del server remoto
-                self.nombreCopia = archivoConRutaRemota + mascara
-                self.limpiarLogRemoto((archivoConRutaRemota, self.nombreCopia))
-
-                #Eliminar el archivo .log y .csv local
-                self.logger.info('Eliminando .log:{0} del pc local'.format(archivoConRutaLocal + mascara))
-                self.logger.info('Eliminando .csv:{0} del pc local'.format(archivoConRutaLocal + mascara + '.csv'))
-                os.system('rm {0}'.format(archivoConRutaLocal + mascara))
-                os.system('rm {0}'.format(archivoConRutaLocal + mascara + '.csv'))
-
-                #Eliminar el archivo .csv que se guardo en postgresql
-                #ar
+            self.logger.info('Ejecutado con Exito el comando:{1}'.format(comando))
         except:
+            print('Hubo una ecepcion', comando)
             # Obtiene la ecepcion mas reciente
             exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
             #sale del Script e Imprime un error con lo que sucedio
@@ -410,9 +402,10 @@ class demonioServer():
          - Copia el archivo remoto access.log con otro nombre
         '''
 
+        print(tupla)
         nombre_real, nombre_copia = tupla
         #self.ssh_ejecutar('/etc/init.d/squid3 stop')
-        self.ssh_ejecutar('cp {0} {1}'.format(nombre_real, nombre_copia))
+        self.sshEjecutar('"cp {0} {1}"'.format(nombre_real, nombre_copia))
         #self.ssh_ejecutar('/etc/init.d/squid3 start')
 
     def limpiarLogRemoto(self, tupla):
@@ -427,13 +420,19 @@ class demonioServer():
 
         nombre_real, nombre_copia = tupla
 
-        self.ssh_ejecutar('echo > {0}'.format(nombre_real))
-        self.ssh_ejecutar('chown proxy:proxy {0}'.format(nombre_real))
+        self.sshEjecutar('"echo > {0}"'.format(nombre_real))
+        self.sshEjecutar('"chown proxy:proxy {0}"'.format(nombre_real))
 
-        self.logger.info('Eliminando archivo {0} que es una copia de {0} del proxy'\
+        self.logger.info('Eliminando archivo {0} que es una copia de {1} del proxy'\
                          .format(nombre_copia, nombre_real))
 
-        self.ssh_ejecutar('rm {0}'.format(nombre_copia))
+        self.sshEjecutar('rm {0}'.format(nombre_copia))
+
+    def limpiarLogLocal(self, nombreRutaArchivo):
+        ''' Metodo que permite eliminar archivos .Log del PC Local'''
+
+        self.logger.info('Eliminando {0} del pc local'.format(nombreRutaArchivo))
+        os.system('rm {0}'.format(nombreRutaArchivo))
 
     def main(self):
         '''Metodo Principal'''
@@ -446,10 +445,8 @@ class demonioServer():
         archivoConRutaRemota = self.rutaArchivoRemoto
         mascara = self.mascaraArchivo
 
-        #Hacer una Copia de Access.log y copiarlo con otro nombre
+        #Hacer una Copia de Access.log remoto y copiarlo con otro nombre
         self.nombreCopia = archivoConRutaRemota + mascara
-        self.sshConectar()
-        exit(0)
         self.prepararLogRemoto((archivoConRutaRemota, self.nombreCopia))
 
         #Copiar el archivo remoto para el pc local y poder tratarlo
@@ -458,27 +455,6 @@ class demonioServer():
         #Tratar el archivo .log LOCAL para transformarlo en un archivo .CSV
         #Se le pasan 2 parametros (El nombre del archivo mas una mascara que tiene formato dma_hms)
         self.leerLog((archivoConRutaLocal + mascara, archivoConRutaLocal + mascara + '.csv'))
-
-        #Copiar el archivo local .csv al servidor remoto para luego hacerle en copy to de PostGreSQL
-        al = archivoConRutaLocal + mascara + '.csv'
-        ar = self.rutaArchivoCSV + mascara + '.csv'
-
-        #Se comenta esta linea porque por ahora no es necesario exportarlo
-        #ya que se realiza local en la coleccion de mongo
-        #self.exportarRemotoLog((ar, al))
-
-        '''
-        #Por Ahora se reemplaza postgresql con mongoDb
-
-        #Apartir de aqui se exporta el csv a PostGreSQL
-        comandoSQL = "copy log_squid (fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion) from '{0}' delimiter ',' ".format(ar)
-
-        self.logger.info(comandoSQL.strip())
-        self.conectarPostGreSQL()
-        self.ejecutarPostGreSQL(comandoSQL)
-        self.cur.close()
-        self.conn.close()
-        '''
 
         #Apartir de aqui se usa MongoDb
         '''Este comando es para exportar el .csv a mongo database
@@ -493,8 +469,9 @@ class demonioServer():
         #os.system(comandoTerminalMongo)
         #c = subprocess.Popen(['mongoimport', '-d', 'pymanati', '-c', 'log_squid',  '--stopOnError' ,'--type', 'csv', '--file', '/home/cgarcia/access.csv', '--ignoreBlanks', '--fields', 'fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion'], stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=False)
 
+        al = archivoConRutaLocal + mascara + '.csv'
         os.system('export LC_ALL=C')
-        comando = 'mongoimport -d  pymanati -c log_squid --stopOnError --type csv --file {0} --ignoreBlanks \
+        comando = 'mongoimport -h 10.121.3.124:27017 -d  pymanati -c log_squid --stopOnError --type csv --file {0} --ignoreBlanks \
             --fields fecha,puerto,ip,pc,acceso,puerto_acceso,metodo,direccion'.format(al)
         try:
             ejecutar = subprocess.Popen(comando, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
@@ -508,19 +485,16 @@ class demonioServer():
                 self.nombreCopia = archivoConRutaRemota + mascara
                 self.limpiarLogRemoto((archivoConRutaRemota, self.nombreCopia))
 
-                #Eliminar el archivo .log y .csv local
-                self.logger.info('Eliminando .log:{0} del pc local'.format(archivoConRutaLocal + mascara))
-                self.logger.info('Eliminando .csv:{0} del pc local'.format(archivoConRutaLocal + mascara + '.csv'))
-                os.system('rm {0}'.format(archivoConRutaLocal + mascara))
-                os.system('rm {0}'.format(archivoConRutaLocal + mascara + '.csv'))
-
-                #Eliminar el archivo .csv que se guardo en postgresql
-                #ar
         except:
             # Obtiene la ecepcion mas reciente
             exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
             #sale del Script e Imprime un error con lo que sucedio
             self.logger.error(exceptionValue)
+
+        #Eliminar el archivo .log y .csv local
+        self.limpiarLogLocal(archivoConRutaLocal + mascara)
+        self.limpiarLogLocal(archivoConRutaLocal + mascara + '.csv')
+
 
     def run(self):
         '''Metodo que ejecuta el demonio y lo mantiene
@@ -539,6 +513,7 @@ class demonioServer():
             #sys.exit(0)
             time.sleep(1800)
 
+'''
 #Instancio la Clase
 app = demonioServer()
 handler = app.configLog()
@@ -547,8 +522,9 @@ daemon_runner = runner.DaemonRunner(app)
 #Esto garantiza que el identificador de archivo logger no quede cerrada durante daemonization
 daemon_runner.daemon_context.files_preserve=[handler.stream]
 daemon_runner.do_action()
+'''
 
-'''if __name__ == '__main__':
+if __name__ == '__main__':
     app = demonioServer()
     handler = app.configLog()
-    app.run()'''
+    app.run()
